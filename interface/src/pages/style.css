@@ -1,3 +1,4 @@
+/* BASE STYLES */
 * {
     padding: 0px;
     margin: 0px;
@@ -19,6 +20,7 @@ body {
     flex-direction: row;
 }
 
+/* SIDEBAR AND NAVIGATION */
 .sideBar {
     height: 100vh;
     background-color: #1c1c1c;
@@ -64,127 +66,104 @@ body {
     overflow-y: auto;
 }
 
-/* GRAPHS LAYOUT */
-.graficos_dashboard {
+/* CAR MODEL COMPONENT */
+.car-model-container {
     display: flex;
-    flex-direction: row;
-    width: 100%;
-    height: 100%;
-    gap: 20px;
-}
-
-.left_panel {
-    display: flex;
-    flex-direction: column;
-    width: 70%;
-    gap: 20px;
-}
-
-.right_panel {
-    display: flex;
-    flex-direction: column;
-    width: 30%;
-    gap: 20px;
-}
-
-.chart_legend {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 12px;
-    margin-top: 0.5rem;
-    font-size: 14px;
-}
-
-.chart_legend_item {
-    display: flex;
+    flex-direction: row; /* Changed to row for side-by-side display */
     align-items: center;
-    gap: 6px;
-}
-
-.chart_legend_color {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    display: inline-block;
-}
-
-.graficos_temperatura, .graficos_acc {
-    display: flex;
-    flex-direction: row;
+    justify-content: space-around;
     gap: 20px;
-    height: 250px;
-}
-
-.grafico_multivariavel{
-    width: 100%;
-}
-
-/* MAP LAYOUT */
-.map_layout {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    gap: 20px;
-}
-
-.map_layout_map {
-    width: 100%;
-    height: 50vh;
     background-color: #1c1c1c;
     border-radius: 8px;
-    overflow: hidden;
+    padding: 20px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.map_layout_below {
-    display: flex;
-    flex-direction: row;
+.image-wrapper {
     width: 100%;
-    height: auto;
-    gap: 20px;
+    max-width: 200px;
+    max-height: 100px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    transition: transform 0.2s ease-out; /* Smooths the rotation effect */
 }
 
-.map_layout_databoxes {
+.image-wrapper img {
+    width: 70%; /* Adjust to fill the wrapper */
+    height: auto;
+}
+
+/* DASHBOARD LAYOUTS */
+.dashboard-grid {
+    display: grid;
+    gap: 20px;
+    height: 100%;
+}
+
+.dashboard-mapa {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 2fr 1fr;
+    grid-template-areas:
+        "mapa dados"
+        "mapa serial";
+}
+
+.dashboard-dados {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr;
+    grid-template-areas: "dados serial";
+}
+
+/* GRID AREAS */
+.map-panel {
+    grid-area: mapa;
+}
+
+.data-panel-large {
+    grid-area: dados;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 15px;
-    width: 100%;
+    background-color: #1c1c1c; /* Changed to a shared background color */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-.map_layout_databox {
+.serial-panel {
+    grid-area: serial;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* DATA BOXES */
+.databox {
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    min-height: 100px;
-    background-color: #1c1c1c;
+    background-color: #2a2a2a; /* Slightly darker background for individual boxes */
     border-radius: 8px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
     padding: 1rem;
     text-align: center;
 }
 
-.map_layout_databox h3 {
+.databox h3 {
     margin-bottom: 0.5rem;
     font-size: 1rem;
     color: #9a9a9a;
 }
 
-.map_layout_databox p {
+.databox p {
     font-size: 1.5rem;
     font-weight: bold;
     color: #4a90e2;
 }
 
-.map_layout_below_right {
-    display: flex;
-    flex-direction: column;
-    width: 30%;
-    gap: 20px;
-}
-
-/* SHARED COMPONENTS */
+/* MISC COMPONENTS */
 .SerialDiv textarea {
     width: 100%;
     height: 200px;
@@ -220,11 +199,68 @@ body {
     border-radius: 12px 0 0 12px;
 }
 
-/* MOBILE RESPONSIVE DESIGN */
-@media (max-width: 768px) and (orientation: portrait) {
-    #root, :root, .dashboard {
-        flex-direction: column;
+/* GRAPHS LAYOUT */
+.graficos_dashboard {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    height: 100%;
+    gap: 20px;
+}
+
+.left_panel {
+    display: flex;
+    flex-direction: column;
+    width: 70%;
+    gap: 20px;
+}
+
+.right_panel {
+    display: flex;
+    flex-direction: column;
+    width: 30%;
+    gap: 20px;
+    height: 100%;
+}
+
+.chart_legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 0.5rem;
+    font-size: 14px;
+}
+
+.chart_legend_item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.chart_legend_color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.graficos_temperatura, .graficos_acc {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    height: 250px;
+}
+
+.grafico_multivariavel{
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    /* Main layout adjustments */
+    .dashboard {
+        flex-direction: column; /* Stacks sidebar and main content */
     }
+
     .sideBar {
         width: 100%;
         height: auto;
@@ -235,94 +271,58 @@ body {
     }
 
     .sideBar img {
-        display: none;
+        display: none; /* Hides the logo on smaller screens to save space */
     }
 
     .main_window {
-        padding: 10px;
+        padding: 10px; /* Reduces padding for more content area */
+        overflow-y: visible; /* Allows scrolling within the main window if needed */
     }
 
-    .graficos_dashboard,
-    .map_layout_below {
+    /* Dashboard layouts and panels */
+    .dashboard-grid, .dashboard-mapa, .dashboard-dados {
+        grid-template-columns: 1fr; /* Ensures a single column layout */
+        grid-template-rows: auto;
+        grid-template-areas: none; /* Resets grid for vertical stacking */
+        display: flex;
         flex-direction: column;
-        gap: 10px;
+        gap: 15px; /* Adjusts gap between sections */
     }
 
-    .left_panel,
-    .right_panel {
-        width: 100%;
-        gap: 10px;
+    .map-panel, .data-panel-large, .serial-panel {
+        width: 100%; /* Makes all panels full width */
     }
 
-    .map_layout_below_right {
-        width: 100%;
-        flex-direction: row;
-        gap: 10px;
+    /* Data boxes and their content */
+    .data-panel-large {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); /* Allows data boxes to wrap more efficiently */
+        padding: 15px;
+        gap: 10px; /* Reduces gap between data boxes */
     }
 
-    .graficos_temperatura,
-    .graficos_acc {
-        flex-direction: column;
-        height: auto;
-        gap: 10px;
-    }
-}
-
-@media (max-width: 768px) and (orientation: landscape) {
-    #root, :root, .dashboard {
-        flex-direction: row;
+    .databox p {
+        font-size: 1.2rem; /* Reduces font size for better fit */
     }
 
-    .sideBar {
-        width: 100px; /* Adjust sidebar width for landscape */
-        height: 100vh;
-        flex-direction: column;
-        justify-content: flex-start;
-        align-items: center;
-        padding-top: 1rem;
+    /* Graphs layout adjustments */
+    .graficos_dashboard {
+        flex-direction: column; /* Stacks the left and right panels */
+        gap: 15px;
     }
 
-    .sideBar button {
-        width: 80px;
-        height: 40px;
-        font-size: 14px;
+    .left_panel, .right_panel {
+        width: 100%; /* Makes graph panels full width */
     }
 
-    .sideBar img {
-        width: 80px;
-        margin-bottom: 1rem;
+    .graficos_temperatura, .graficos_acc {
+        flex-direction: column; /* Stacks individual temperature and acceleration graphs */
+        height: auto; /* Allows height to be determined by content */
+        gap: 15px;
     }
 
-    .main_window {
-        padding: 10px;
-    }
-
-    .graficos_dashboard,
-    .map_layout_below {
-        flex-direction: row;
-        gap: 10px;
-    }
-
-    .left_panel,
-    .right_panel {
-        width: 50%; /* Adjust panel widths to fit side-by-side */
-        gap: 10px;
-    }
-
-    .map_layout_below_right {
-        width: 50%;
-        flex-direction: column;
-        gap: 10px;
-    }
-
-    .graficos_temperatura,
-    .graficos_acc {
-        flex-direction: row;
-        gap: 10px;
-        height: auto;
-        flex-wrap: wrap; /* Allow wrapping for smaller graph containers */
-    }
-    .graficos_acc .ChartGrafico, .graficos_temperatura .ChartGrafico {
-        width: calc(50% - 5px); /* Ensure charts fit within their container */
+    /* Other component-specific styling */
+    .car-model-container {
+        flex-direction: column; /* Stacks elements within the car model container */
+        gap: 15px;
     }
 }

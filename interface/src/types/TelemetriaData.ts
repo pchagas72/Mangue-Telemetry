@@ -9,6 +9,8 @@ export type TelemetriaData = {
   soc: number;
   volt: number;
   current: number;
+  roll: number;
+  pitch: number;
   latitude: number;
   longitude: number;
   timestamp: string;
