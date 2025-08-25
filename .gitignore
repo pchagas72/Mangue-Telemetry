@@ -4,7 +4,6 @@ __pycache__/
 *.pkl
 
 # Arquivos temporários e gerados
-*.png
 *.pdf
 *.log
 *.DS_Store
