@@ -32,3 +32,87 @@ Não esqueça de deixar uma estrela, obrigado.
 - Interface de replay [ ]
 - Rede neural preventiva de falhas [ ]
 - Debug e "box" de ECU's [ ]
+
+
+## Como utilizar
+
+### Tecnologias:
+
+* Python 3.11+
+* FastAPI + Uvicorn
+* MQTT (aiomqtt/paho-mqtt)
+* SQLite
+* React + Vite (frontend)
+
+#### Estrutura do código
+
+```
+.
+├── LICENSE
+├── README.md
+├── interface/        # Frontend (React + Vite + TypeScript)
+├── server/           # Backend (Python + FastAPI + MQTT)
+```
+
+---
+
+#### Backend (server)
+
+**1. Criar e ativar ambiente virtual**
+
+```bash
+cd server
+python3 -m venv venv
+source venv/bin/activate   # Linux/macOS
+venv\Scripts\activate      # Windows
+```
+
+**2. Instalar dependências**
+
+```bash
+pip install -r requirements.txt
+```
+
+**3. Configurar variáveis de ambiente**
+Crie um arquivo `.env` baseado em `credentials.env`, contendo:
+
+```
+HOSTNAME=broker.exemplo.com
+PORT=1883
+USERNAME=usuario
+PASSWORD=senha
+```
+
+**4. Executar servidor**
+
+```bash
+python3 run.py
+```
+
+---
+
+####  Frontend (interface)
+
+**1. Instalar dependências**
+
+```bash
+cd interface
+npm install
+```
+
+**2. Ajustes necessários**
+Se estiver usando outro pacote/protocolo CAN, altere os arquivos em:
+`./interface/src/hooks/useTelemetry.ts`
+
+**3. Rodar aplicação**
+
+```bash
+npm run dev
+```
+
+A interface estará disponível em:
+👉 [http://localhost:5173](http://localhost:5173)
+
+## Lembretes
+
+Obrigado por utilizar o nosso software! Lembre-se de manter a licença sempre em mente.
