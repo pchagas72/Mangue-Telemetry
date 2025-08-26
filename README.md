@@ -89,6 +89,10 @@ PASSWORD=senha
 python3 run.py
 ```
 
+Lembre-se de fazer as alterações corretas para o pacote CAN do seu carro.
+
+Leia o código!
+
 ---
 
 ####  Frontend (interface)
@@ -103,6 +107,9 @@ npm install
 **2. Ajustes necessários**
 Se estiver usando outro pacote/protocolo CAN, altere os arquivos em:
 `./interface/src/hooks/useTelemetry.ts`
+`./interface/src/pages/Dashboard.ts`
+
+E outros que forem necessários.
 
 **3. Rodar aplicação**
 
