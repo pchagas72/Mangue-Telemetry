@@ -57,7 +57,6 @@ async def broadcast_telemetry():
                 tel_data = await telemetry.get_payload()
                 data_parsed = data.parse_mqtt_packet(tel_data)
                 message = json.dumps(data_parsed)
-                print("Sending telemetry message")
                 await asyncio.gather(
                     *[ws.send_text(message) for ws in active_websockets],
                     return_exceptions=True
@@ -83,15 +82,15 @@ async def startup_event():
     else:
         # Inicia a conexão MQTT e o banco de dados.
         await telemetry.start()
-        print("Telemetry started")
+        print("[Telemetry] Telemetry started")
         data.connect_to_db()
-        print("Conected the db")
+        print("[Database] Conected the db")
         data.create_schema()
-        print("Created the db")
+        print("[Database] Created the db")
         data.start_new_session(label="Teste de produção 1")
-        print("Started new section")
+        print("[Database] Started new section")
         asyncio.create_task(broadcast_telemetry())
-        print("Started broadcasting")
+        print("[Telemetry] Started broadcasting")
 
 
 @app.websocket("/ws/telemetry")
@@ -101,7 +100,7 @@ async def telemetry_endpoint(websocket: WebSocket):
         à lista de conexões ativas.
     """
     await websocket.accept()
-    print("Novo cliente conectado.")
+    print("[WebSocket] Novo cliente conectado.")
     active_websockets.add(websocket)
     try:
         await websocket.receive_text()
