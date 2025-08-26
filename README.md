@@ -19,6 +19,8 @@ Não esqueça de deixar uma estrela, obrigado.
 - Broadcast de telemetria via LoRa [ ]
 - Replay de sessões passadas [ ]
 - Interface para debug e "box" de ECU's [ ]
+- Aplicar filtros do ilogger [ ]
+- Criar executável [ ]
 
 ### Frontend (interface)
 
@@ -32,6 +34,8 @@ Não esqueça de deixar uma estrela, obrigado.
 - Interface de replay [ ]
 - Rede neural preventiva de falhas [ ]
 - Debug e "box" de ECU's [ ]
+- Página de exposição dos dados do ilogger em gráficos [ ]
+- Criar executável [ ]
 
 
 ## Como utilizar

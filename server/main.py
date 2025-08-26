@@ -17,7 +17,7 @@ from simuladores.python.simulador import Simuladores
 
 
 # Definindo constantes
-SIMULAR_INTERFACE = True
+SIMULAR_INTERFACE = False
 credentials = dotenv_values("./credentials.env")
 
 # Construindo classes
@@ -53,6 +53,15 @@ async def broadcast_telemetry():
                     # Permite que as tarefas falhem sem parar o gather.
                     return_exceptions=True
                 )
+            else:
+                tel_data = await telemetry.get_payload()
+                data_parsed = data.parse_mqtt_packet(tel_data)
+                message = json.dumps(data_parsed)
+                print("Sending telemetry message")
+                await asyncio.gather(
+                    *[ws.send_text(message) for ws in active_websockets],
+                    return_exceptions=True
+                )
 
             # Pausa para evitar sobrecarga.
             await asyncio.sleep(0.5)
@@ -74,9 +83,15 @@ async def startup_event():
     else:
         # Inicia a conexão MQTT e o banco de dados.
         await telemetry.start()
+        print("Telemetry started")
         data.connect_to_db()
+        print("Conected the db")
         data.create_schema()
+        print("Created the db")
         data.start_new_session(label="Teste de produção 1")
+        print("Started new section")
+        asyncio.create_task(broadcast_telemetry())
+        print("Started broadcasting")
 
 
 @app.websocket("/ws/telemetry")
