@@ -31,8 +31,9 @@ telemetry = MangueTelemetry(
 data = MangueData()
 sim = Simuladores()
 
-# Lista para armazenar todas as conexões WebSocket ativas.
-# Use um `set` para garantir a unicidade e para a remoção eficiente.
+# Criando variáveis globais
+# Set (conjunto) para armazenar todas as conexões WebSocket ativas.
+# Criar um conjunto evita repetições de maneira elegante.
 active_websockets = set()
 
 
@@ -46,15 +47,14 @@ async def broadcast_telemetry():
             if SIMULAR_INTERFACE:
                 sim_data = await sim.gerar_dados()
                 message = json.dumps(sim_data)
-                # Cria uma lista de tarefas para
-                # enviar a mensagem para todos os clientes
+                # Cria uma lista de mensagens a serem enviadas.
                 await asyncio.gather(
                     *[ws.send_text(message) for ws in active_websockets],
-                    # Permite que as tarefas falhem sem parar o gather
+                    # Permite que as tarefas falhem sem parar o gather.
                     return_exceptions=True
                 )
 
-            # Pausa para evitar sobrecarga do cliente e do servidor
+            # Pausa para evitar sobrecarga.
             await asyncio.sleep(0.5)
 
     except asyncio.CancelledError:
@@ -68,10 +68,11 @@ async def startup_event():
         conexões.
     """
     if SIMULAR_INTERFACE:
-        # Cria e inicia a tarefa de background para simulação
+        # Cria e inicia a tarefa de background para simulação.
+        # Note que dados não serão salvos em simulações de interface.
         asyncio.create_task(broadcast_telemetry())
     else:
-        # Inicia a conexão MQTT e o banco de dados
+        # Inicia a conexão MQTT e o banco de dados.
         await telemetry.start()
         data.connect_to_db()
         data.create_schema()

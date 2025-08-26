@@ -22,8 +22,6 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (data) {
-            console.log(data.roll);
-            console.log(data.pitch);
             const timestamp = Date.now();
             let novoDado = false;
 

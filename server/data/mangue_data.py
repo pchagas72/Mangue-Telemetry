@@ -13,10 +13,11 @@ import sqlite3
 class MangueData:
     """
         Classe responsável por processar e guardar dados.
+        Note a importância da variável "payload_fmt"
     """
 
     def __init__(self):
-        self.payload_fmt = "<fbbfbhhhhhhhhhhbddi"
+        self.payload_fmt = "<fbbfbhhhhhhhhhhbddi" # Formato do pacote da CAN.
         self.sessao_atual_id = None
         self.database_con = None
         self.database_cur = None

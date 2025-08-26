@@ -22,7 +22,7 @@ class MangueTelemetry:
         self.port = int(port)
         self.username = username
         self.password = password
-        self.queue = asyncio.Queue()  # fila para repassar mensagens
+        self.queue = asyncio.Queue()  # Fila para repassar mensagens.
         self._task = None
 
     async def start(self):
@@ -36,7 +36,7 @@ class MangueTelemetry:
     async def _listen(self):
         """
             Essa função é um processo interno/privado (por isso o _)
-            que escuta o canal MQTT e coloca os dados em uma fila.
+            Escuta o canal MQTT e coloca os dados em uma fila.
         """
         async with aiomqtt.Client(
             hostname=self.hostname,
