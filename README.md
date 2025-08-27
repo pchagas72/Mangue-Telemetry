@@ -10,6 +10,10 @@ Não esqueça de deixar uma estrela, obrigado.
 
 ## Features/TODO:
 
+### Geral
+- Instalador e iniciador simples [X]
+- Documentação completa [ ]
+
 ### Backend (server)
 
 - Broadcast de telemetria via MQTT [X]
