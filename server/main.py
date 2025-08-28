@@ -17,7 +17,7 @@ from simuladores.python.simulador import Simuladores
 
 
 # Definindo constantes
-SIMULAR_INTERFACE = True
+SIMULAR_INTERFACE = False
 credentials = dotenv_values("./credentials.env")
 
 # Construindo classes

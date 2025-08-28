@@ -10,8 +10,9 @@ Não esqueça de deixar uma estrela, obrigado.
 
 ## Features/TODO:
 
-### Geral
+### Starter
 - Instalador e iniciador simples [X]
+- Transformar o starter em um centro de aplicações [ ]
 - Documentação completa [ ]
 
 ### Backend (server)
