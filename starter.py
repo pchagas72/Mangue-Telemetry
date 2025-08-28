@@ -15,6 +15,16 @@ REQUIREMENTS_FILE = os.path.join(SERVER_DIR, 'requirements.txt')
 VENV_PATH = os.path.join(SERVER_DIR, 'venv')
 WEBSERVER_URL = "http://localhost:3000"
 
+# --- Novo: Determinar o caminho do executável Python e pip dentro do venv ---
+# Define o nome do executável com base no sistema operacional
+PYTHON_EXECUTABLE_NAME = 'python.exe' if sys.platform == 'win32' else 'python'
+PIP_EXECUTABLE_NAME = 'pip.exe' if sys.platform == 'win32' else 'pip'
+# Constrói o caminho completo para os executáveis
+VENV_PYTHON_EXECUTABLE = os.path.join(VENV_PATH, 'Scripts' if sys.platform == 'win32' else 'bin', PYTHON_EXECUTABLE_NAME)
+VENV_PIP_EXECUTABLE = os.path.join(VENV_PATH, 'Scripts' if sys.platform == 'win32' else 'bin', PIP_EXECUTABLE_NAME)
+# ----------------------------------------------------------------------------
+
+
 class ServerManagerApp:
     """
     A simple Tkinter application to manage two server processes.
@@ -181,23 +191,25 @@ class ServerManagerApp:
 
     def _start_run_py_process(self):
         """
-        Helper method to run the run.py file.
+        Helper method to run the run.py file using the venv's Python interpreter.
         """
         try:
-            self.log(f"Executando 'python {SERVER_RUN_FILE}' a partir do diretório: {SERVER_DIR}")
+            # --- Modificado para usar o executável do venv ---
+            self.log(f"Executando '{VENV_PYTHON_EXECUTABLE} {SERVER_RUN_FILE}' a partir do diretório: {SERVER_DIR}")
             self.run_py_process = subprocess.Popen(
-                [sys.executable, SERVER_RUN_FILE],
+                [VENV_PYTHON_EXECUTABLE, SERVER_RUN_FILE],
                 cwd=SERVER_DIR,  # This ensures the process starts in the correct directory
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1
             )
+            # ---------------------------------------------------
             
             # Read and log the output in a separate thread
             self._log_process_output(self.run_py_process, "run.py")
         except FileNotFoundError:
-            self.log("ERRO: O arquivo 'run.py' não foi encontrado.")
+            self.log("ERRO: O arquivo 'run.py' ou o executável do venv não foi encontrado.")
             self.stop_servers()
         except Exception as e:
             self.log(f"ERRO ao iniciar o servidor Python: {e}")
@@ -305,19 +317,16 @@ class ServerManagerApp:
                 
             self.log("Instalando dependências de 'requirements.txt'...")
             
-            # Path to the pip executable inside the venv
-            pip_executable = os.path.join(VENV_PATH, 'bin', 'pip')
-            if sys.platform == 'win32':
-                pip_executable = os.path.join(VENV_PATH, 'Scripts', 'pip.exe')
-            
+            # --- Modificado para usar o executável do pip do venv ---
             install_process = subprocess.Popen(
-                [pip_executable, "install", "-r", REQUIREMENTS_FILE],
+                [VENV_PIP_EXECUTABLE, "install", "-r", REQUIREMENTS_FILE],
                 cwd=SERVER_DIR,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1
             )
+            # -------------------------------------------------------
             
             self._log_process_output(install_process, "Instalação")
 
