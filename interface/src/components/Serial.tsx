@@ -1,71 +1,53 @@
 import { useEffect, useState } from 'react';
 import type { TelemetriaData } from "../types/TelemetriaData.ts";
 
-interface SerialProps {
-    data: TelemetriaData;
-}
+// The msgs array is removed from here
 
-const msgs: string[] = [];
-
-export function Serial({ data }: SerialProps) {
-    const [mensagens, setMensagens] = useState('');
+export function Serial({ data }: { data: TelemetriaData }) {
+    // Manage messages with useState, making it component-local state
+    const [messages, setMessages] = useState<string[]>([]);
 
     useEffect(() => {
+        const newMessages: string[] = [];
 
-        if (data.vel <= 5) {
-            if (!msgs.includes('Carro muito devagar ou parado.')){
-                msgs.push('Carro muito devagar ou parado.');
-            }
+        // Check conditions and add new messages
+        if (data.speed <= 5) {
+            newMessages.push('Carro muito devagar ou parado.');
         }
         if (data.rpm > 5000) {
-            if (!msgs.includes('Rotação do motor extremamente alta.')){
-                msgs.push('Rotação do motor extremamente alta.');
-            }
+            newMessages.push('Rotação do motor extremamente alta.');
         }
-        if (data.temp_motor > 150) {
-            if (!msgs.includes('Temperatura do motor extremamente alta.')){
-                msgs.push('Temperatura do motor extremamente alta.');
-            }
+        if (data.temperature > 150) {
+            newMessages.push('Temperatura do motor extremamente alta.');
         }
         if (data.temp_cvt > 150) {
-            if (!msgs.includes('Temperatura da CVT extremamente alta.')){
-                msgs.push('Temperatura da CVT extremamente alta.');
-            }
+            newMessages.push('Temperatura da CVT extremamente alta.');
         }
         if (data.soc < 5) {
-            if (!msgs.includes('Trocar bateria.')){
-                msgs.push('Trocar bateria.');
-            }
+            newMessages.push('Trocar bateria.');
         }
         if (data.volt < 7) {
-            if (!msgs.includes('Voltagem da bateria extremamente baixa.')){
-                msgs.push('Voltagem da bateria extremamente baixa.');
+            newMessages.push('Voltagem da bateria extremamente baixa.');
+        }
+        
+        // This is a more robust way to update the list of messages
+        setMessages(prevMsgs => {
+            // Combine previous messages with new, unique messages
+            const combined = [...prevMsgs, ...newMessages.filter(nm => !prevMsgs.includes(nm))];
+            
+            // Ensure the list does not exceed 10 items
+            if (combined.length > 10) {
+                return combined.slice(combined.length - 10);
             }
-        }
-        if (data.current < 200) {
-            if (!msgs.includes('Corrente da bateria extremamente baixa.')){
-                msgs.push('Corrente da bateria extremamente baixa.');
-            }
-        }
-        if (msgs.length >= 10){
-            msgs.shift();
-        }
+            return combined;
+        });
 
-        setMensagens(msgs.join('\n'));
-    }, [
-            data.vel,
-            data.rpm,
-            data.temp_motor,
-            data.temp_cvt,
-            data.soc,
-            data.volt,
-            data.current
-        ]);
+    }, [data]); // Effect runs whenever data changes
 
     return (
         <div className="SerialDiv">
             <textarea
-                value={mensagens}
+                value={messages.join('\n')} // Join the state array to display
                 readOnly
                 rows={15}
                 cols={40}
@@ -74,4 +56,3 @@ export function Serial({ data }: SerialProps) {
         </div>
     );
 }
-

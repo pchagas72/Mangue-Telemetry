@@ -1,17 +1,24 @@
 export type TelemetriaData = {
-  vel: number;
+  speed: number;
   rpm: number;
-  accx: number;
-  accy: number;
-  accz: number;
-  temp_motor: number;
+  temperature: number;
   temp_cvt: number;
   soc: number;
   volt: number;
   current: number;
+
+  acc_x: number;
+  acc_y: number;
+  acc_z: number;
+  
+  dps_x: number;
+  dps_y: number;
+  dps_z: number;
+
   roll: number;
   pitch: number;
   latitude: number;
   longitude: number;
-  timestamp: string;
+  timestamp: number;
+  flags: number;
 };

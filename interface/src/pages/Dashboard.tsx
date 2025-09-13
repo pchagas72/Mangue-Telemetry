@@ -6,10 +6,22 @@ import { Serial } from "../components/Serial";
 import { useTelemetry } from "../hooks/useTelemetry";
 import { useEffect, useState } from "react";
 import { CarModel } from "../components/CarModel";
+import type { TelemetriaData } from "../types/TelemetriaData";
+
+// Helper to safely format numbers, providing a fallback for null/undefined data
+const formatNumber = (value: number | undefined | null, digits = 2): string => {
+    if (typeof value !== 'number' || isNaN(value)) {
+        return 'N/A';
+    }
+    return value.toFixed(digits);
+};
+
 
 export default function Dashboard() {
     const data = useTelemetry();
     const [layout, setLayout] = useState<"pista" | "dados" | "graficos">("pista");
+
+    // State for chart data
     const [timestamps, setTimestamps] = useState<number[]>([]);
     const [velocidades, setVelocidades] = useState<number[]>([]);
     const [rpms, setRpms] = useState<number[]>([]);
@@ -22,45 +34,48 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (data) {
-            const timestamp = Date.now();
+            const timestamp = data.timestamp; // Use timestamp from data if available
             let novoDado = false;
 
-            if (typeof data.vel === "number") {
-                setVelocidades((prev) => [...prev.slice(-99), data.vel]);
+            // --- FIXES APPLIED HERE ---
+            if (typeof data.speed === "number") {
+                setVelocidades((prev) => [...prev.slice(-99), data.speed]);
                 novoDado = true;
             }
             if (typeof data.rpm === "number") {
                 setRpms((prev) => [...prev.slice(-99), data.rpm]);
                 novoDado = true;
             }
-            if (typeof data.temp_motor === "number") {
-                setTemps_motor((prev) => [...prev.slice(-99), data.temp_motor]);
+            if (typeof data.temperature === "number") {
+                setTemps_motor((prev) => [...prev.slice(-99), data.temperature]);
                 novoDado = true;
             }
             if (typeof data.temp_cvt === "number") {
                 setTemps_cvt((prev) => [...prev.slice(-99), data.temp_cvt]);
                 novoDado = true;
             }
-            if (typeof data.accx === "number") {
-                setAceleracoesX((prev) => [...prev.slice(-99), data.accx]);
+            if (typeof data.acc_x === "number") {
+                setAceleracoesX((prev) => [...prev.slice(-99), data.acc_x]);
                 novoDado = true;
             }
-            if (typeof data.accy === "number") {
-                setAceleracoesY((prev) => [...prev.slice(-99), data.accy]);
+            if (typeof data.acc_y === "number") {
+                setAceleracoesY((prev) => [...prev.slice(-99), data.acc_y]);
                 novoDado = true;
             }
-            if (typeof data.accz === "number") {
-                setAceleracoesZ((prev) => [...prev.slice(-99), data.accz]);
+            if (typeof data.acc_z === "number") {
+                setAceleracoesZ((prev) => [...prev.slice(-99), data.acc_z]);
                 novoDado = true;
             }
+            // --- END OF FIXES ---
+
 
             if (novoDado) {
                 setTimestamps((prev) => [...prev.slice(-99), timestamp]);
             }
-            if (!isNaN(data.latitude) && !isNaN(data.longitude)) {
+            if (typeof data.latitude === 'number' && typeof data.longitude === 'number' && !isNaN(data.latitude) && !isNaN(data.longitude)) {
                 const pos: [number, number] = [data.latitude, data.longitude];
                 const last = caminho.at(-1);
-                const tol = 1e-5;
+                const tol = 1e-5; // Tolerance for position change
                 if (
                     !last ||
                     Math.abs(last[0] - pos[0]) > tol ||
@@ -70,7 +85,15 @@ export default function Dashboard() {
                 }
             }
         }
-    }, [data]);
+    }, [data, caminho]);
+
+    // Create a default data object for initial render to avoid errors
+    const displayData: TelemetriaData = data || {
+        speed: 0, rpm: 0, temperature: 0, temp_cvt: 0, soc: 0, volt: 0, current: 0,
+        acc_x: 0, acc_y: 0, acc_z: 0, dps_x: 0, dps_y: 0, dps_z: 0,
+        roll: 0, pitch: 0, latitude: 0, longitude: 0, timestamp: 0, flags: 0,
+    };
+
 
     return (
         <div className="dashboard">
@@ -84,118 +107,111 @@ export default function Dashboard() {
                 {layout === "pista" && (
                     <div className="dashboard-grid dashboard-mapa">
                         <div className="map-panel chart-container">
-                            {data && <Mapa latitude={data.latitude} longitude={data.longitude} caminho={caminho} />}
+                            <Mapa latitude={displayData.latitude} longitude={displayData.longitude} caminho={caminho} />
                         </div>
                         <div className="data-panel-large">
+                             {/* --- FIXES APPLIED HERE --- */}
                             <div className="databox">
                                 <h3>Velocidade</h3>
-                                <p>{data?.vel ?? 'N/A'} km/h</p>
+                                <p>{formatNumber(displayData.speed, 1)} km/h</p>
                             </div>
                             <div className="databox">
                                 <h3>RPM</h3>
-                                <p>{data?.rpm ?? 'N/A'}</p>
+                                <p>{formatNumber(displayData.rpm, 0)}</p>
                             </div>
                             <div className="databox">
                                 <h3>Temp. Motor</h3>
-                                <p>{data?.temp_motor ?? 'N/A'} ºC</p>
+                                <p>{formatNumber(displayData.temperature, 1)} ºC</p>
                             </div>
                             <div className="databox">
                                 <h3>Temp. CVT</h3>
-                                <p>{data?.temp_cvt ?? 'N/A'} ºC</p>
+                                <p>{formatNumber(displayData.temp_cvt, 1)} ºC</p>
                             </div>
                             <div className="databox">
                                 <h3>Roll</h3>
-                                <p>{data?.roll.toFixed(2) ?? 'N/A'}°</p>
+                                <p>{formatNumber(displayData.roll, 2)}°</p>
                             </div>
                             <div className="databox">
                                 <h3>Pitch</h3>
-                                <p>{data?.pitch.toFixed(2) ?? 'N/A'}°</p>
+                                <p>{formatNumber(displayData.pitch, 2)}°</p>
                             </div>
                         </div>
                         <div className="serial-panel">
-                            {data && <Serial data={data} />}
-                            {data && <CarModel roll={data.roll} pitch={data.pitch} />}
-                            {data && <Bateria soc={data.soc} tensao={data.volt} corrente={data.current} />}
+                            <Serial data={displayData} />
+                            <CarModel roll={displayData.roll} pitch={displayData.pitch} />
+                            <Bateria soc={displayData.soc} tensao={displayData.volt} corrente={displayData.current} />
                         </div>
                     </div>
                 )}
                 {layout === "dados" && (
                     <div className="dashboard-grid dashboard-dados">
                         <div className="data-panel-large">
+                             {/* --- FIXES APPLIED HERE --- */}
                             <div className="databox">
                                 <h3>Velocidade</h3>
-                                <p>{data?.vel ?? 'N/A'} km/h</p>
+                                <p>{formatNumber(displayData.speed, 1)} km/h</p>
                             </div>
                             <div className="databox">
                                 <h3>RPM</h3>
-                                <p>{data?.rpm ?? 'N/A'}</p>
+                                <p>{formatNumber(displayData.rpm, 0)}</p>
                             </div>
                             <div className="databox">
                                 <h3>Temp. Motor</h3>
-                                <p>{data?.temp_motor ?? 'N/A'} ºC</p>
+                                <p>{formatNumber(displayData.temperature, 1)} ºC</p>
                             </div>
                             <div className="databox">
                                 <h3>Temp. CVT</h3>
-                                <p>{data?.temp_cvt ?? 'N/A'} ºC</p>
+                                <p>{formatNumber(displayData.temp_cvt, 1)} ºC</p>
                             </div>
                             <div className="databox">
                                 <h3>Aceleração X</h3>
-                                <p>{data?.accx ?? 'N/A'}</p>
+                                <p>{formatNumber(displayData.acc_x, 3)}</p>
                             </div>
                             <div className="databox">
                                 <h3>Aceleração Y</h3>
-                                <p>{data?.accy ?? 'N/A'}</p>
+                                <p>{formatNumber(displayData.acc_y, 3)}</p>
                             </div>
                             <div className="databox">
                                 <h3>Aceleração Z</h3>
-                                <p>{data?.accz ?? 'N/A'}</p>
+                                <p>{formatNumber(displayData.acc_z, 3)}</p>
                             </div>
                             <div className="databox">
                                 <h3>GPS</h3>
-                                <p>Lat: {data?.latitude.toFixed(4) ?? 'N/A'}</p>
-                                <p>Lon: {data?.longitude.toFixed(4) ?? 'N/A'}</p>
+                                <p>Lat: {formatNumber(displayData.latitude, 4)}</p>
+                                <p>Lon: {formatNumber(displayData.longitude, 4)}</p>
                             </div>
                             <div className="databox">
                                 <h3>Roll</h3>
-                                <p>{data?.roll.toFixed(2) ?? 'N/A'}°</p>
+                                <p>{formatNumber(displayData.roll, 2)}°</p>
                             </div>
                             <div className="databox">
                                 <h3>Pitch</h3>
-                                <p>{data?.pitch.toFixed(2) ?? 'N/A'}°</p>
+                                <p>{formatNumber(displayData.pitch, 2)}°</p>
                             </div>
                         </div>
                         <div className="serial-panel">
-                            {data && <Serial data={data} />}
-                            {data && <CarModel roll={data.roll} pitch={data.pitch} />}
-                            {data && <Bateria soc={data.soc} tensao={data.volt} corrente={data.current} />}
+                            <Serial data={displayData} />
+                            <CarModel roll={displayData.roll} pitch={displayData.pitch} />
+                            <Bateria soc={displayData.soc} tensao={displayData.volt} corrente={displayData.current} />
                         </div>
                     </div>
                 )}
-
-                
                 {layout === "graficos" && (
                     <div className="graficos_dashboard">
                         <div className="left_panel">
+                             {/* --- FIXES APPLIED HERE --- */}
                             <ChartGrafico
                                 titulo="Velocidade"
                                 timestamps={timestamps}
                                 series={[
-                                    {
-                                        label: "Velocidade",
-                                        valores: velocidades,
-                                        cor: "#a6e3a1",
-                                    },
+                                    { label: "Velocidade", valores: velocidades, cor: "#a6e3a1" },
                                 ]}
                             />
                             <ChartGrafico
                                 titulo="RPM"
                                 timestamps={timestamps}
                                 series={[
-                                    {
-                                        label: "RPM",
-                                        valores: rpms,
-                                        cor: "#a6e3a1",
-                                    },
+                                    { label: "RPM", valores: rpms, cor: "#f9e2af" },
                                 ]}
                             />
                             <div className="graficos_temperatura">
@@ -203,22 +219,14 @@ export default function Dashboard() {
                                     titulo="Temperatura Motor (ºC)"
                                     timestamps={timestamps}
                                     series={[
-                                        {
-                                            label: "Temp. Motor",
-                                            valores: temps_motor,
-                                            cor: "#a6e3a1",
-                                        },
+                                        { label: "Temp. Motor", valores: temps_motor, cor: "#f38ba8" },
                                     ]}
                                 />
                                 <ChartGrafico
                                     titulo="Temperatura CVT (ºC)"
                                     timestamps={timestamps}
                                     series={[
-                                        {
-                                            label: "Temp. CVT",
-                                            valores: temps_cvt,
-                                            cor: "#a6e3a1",
-                                        },
+                                        { label: "Temp. CVT", valores: temps_cvt, cor: "#fab387" },
                                     ]}
                                 />
                             </div>
@@ -227,49 +235,33 @@ export default function Dashboard() {
                                     titulo="Aceleração X"
                                     timestamps={timestamps}
                                     series={[
-                                        {
-                                            label: "accX",
-                                            valores: aceleracoesX,
-                                            cor: "#74c7ec",
-                                        },
+                                        { label: "accX", valores: aceleracoesX, cor: "#74c7ec" },
                                     ]}
                                 />
                                 <ChartGrafico
                                     titulo="Aceleração Y"
                                     timestamps={timestamps}
                                     series={[
-                                        {
-                                            label: "accY",
-                                            valores: aceleracoesY,
-                                            cor: "#74c7ec",
-                                        },
+                                        { label: "accY", valores: aceleracoesY, cor: "#89b4fa" },
                                     ]}
                                 />
                                 <ChartGrafico
                                     titulo="Aceleração Z"
                                     timestamps={timestamps}
                                     series={[
-                                        {
-                                            label: "accZ",
-                                            valores: aceleracoesZ,
-                                            cor: "#74c7ec",
-                                        },
+                                        { label: "accZ", valores: aceleracoesZ, cor: "#b4befe" },
                                     ]}
                                 />
                             </div>
-
                         </div>
-
                         <div className="right_panel">
-                            {data && <Mapa latitude={data.latitude} longitude={data.longitude} caminho={caminho} />}
-                            {data && <CarModel roll={data.roll} pitch={data.pitch} />}
-                            {data && <Serial data={data} />}
-                            {data && <Bateria soc={data.soc} tensao={data.volt} corrente={data.current} />}
+                            <Mapa latitude={displayData.latitude} longitude={displayData.longitude} caminho={caminho} />
+                            <CarModel roll={displayData.roll} pitch={displayData.pitch} />
+                            <Serial data={displayData} />
+                            <Bateria soc={displayData.soc} tensao={displayData.volt} corrente={displayData.current} />
                         </div>
-
                     </div>
                 )}
-
             </main>
         </div>
     );
