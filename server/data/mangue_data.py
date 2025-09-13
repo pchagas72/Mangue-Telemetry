@@ -6,9 +6,7 @@
 
 import struct
 import os
-
 import sqlite3
-
 
 class MangueData:
     """
@@ -17,7 +15,7 @@ class MangueData:
     """
 
     def __init__(self):
-        self.payload_fmt = "<fbbfbhhhhhhhhhhbddi" # Formato do pacote da CAN.
+        self.payload_fmt = "<fBBfBH hhh hhh hh H B ddI"
         self.sessao_atual_id = None
         self.database_con = None
         self.database_cur = None
@@ -25,8 +23,6 @@ class MangueData:
     def connect_to_db(self):
         """
             Cria o cursor e a conexão ao arquivo da database.
-            A conexão é auto-explicativa, ela conecta o servidor ao .db
-            O cursor executa ações servidor->database.
         """
         os.makedirs("./data/database/", exist_ok=True)
         self.database_con = sqlite3.connect("./data/database/database.db")
@@ -37,7 +33,6 @@ class MangueData:
     def create_schema(self):
         """
             Garante que o esquema da database seja criado.
-            O esquema contém a chave para a organização dos dados.
         """
         if self.database_cur is None:
             raise RuntimeError(
@@ -54,11 +49,11 @@ class MangueData:
             CREATE TABLE IF NOT EXISTS telemetry (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 session_id INTEGER NOT NULL,
-                accx REAL, accy REAL, accz REAL,
-                dpsx REAL, dpsy REAL, dpsz REAL,
+                acc_x REAL, acc_y REAL, acc_z REAL,
+                dps_x REAL, dps_y REAL, dps_z REAL,
                 roll REAL, pitch REAL,
-                rpm REAL, vel REAL,
-                temp_motor REAL, soc REAL, temp_cvt REAL,
+                rpm REAL, speed REAL,
+                temperature REAL, soc REAL, temp_cvt REAL,
                 volt REAL, current REAL,
                 flags INTEGER,
                 latitude REAL, longitude REAL,
@@ -69,13 +64,11 @@ class MangueData:
             CREATE INDEX IF NOT EXISTS idx_telemetry_session_ts
             ON telemetry(session_id, timestamp);
         """)
-
         self.database_con.commit()
 
     def start_new_session(self, label: str | None = None):
         """
             Cada vez que o servidor funcionar, ele cria uma sessão.
-            Isso é essencial para a organização dos dados.
         """
         self.database_cur.execute(
             "INSERT INTO sessions (label) VALUES (?);",
@@ -93,22 +86,21 @@ class MangueData:
                 "DB não conectada. Chame connect_to_db() primeiro."
             )
         if self.sessao_atual_id is None:
-            # fallback simples: cria uma sessão automática
             self.start_new_session(label="auto")
 
         self.database_cur.execute("""
             INSERT INTO telemetry (
-                session_id, accx, accy, accz, dpsx, dpsy, dpsz,
-                roll, pitch, rpm, vel, temp_motor, soc, temp_cvt,
+                session_id, acc_x, acc_y, acc_z, dps_x, dps_y, dps_z,
+                roll, pitch, rpm, speed, temperature, soc, temp_cvt,
                 volt, current, flags, latitude, longitude, timestamp
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         """, (
             self.sessao_atual_id,
-            packet["accx"], packet["accy"], packet["accz"],
-            packet["dpsx"], packet["dpsy"], packet["dpsz"],
+            packet["acc_x"], packet["acc_y"], packet["acc_z"],
+            packet["dps_x"], packet["dps_y"], packet["dps_z"],
             packet["roll"], packet["pitch"],
-            packet["rpm"], packet["vel"],
-            packet["temp_motor"], packet["soc"], packet["temp_cvt"],
+            packet["rpm"], packet["speed"],
+            packet["temperature"], packet["soc"], packet["temp_cvt"],
             packet["volt"], packet["current"],
             packet["flags"], packet["latitude"], packet["longitude"],
             packet["timestamp"],
@@ -117,46 +109,50 @@ class MangueData:
 
     def parse_mqtt_packet(self, payload: bytes) -> dict:
         """
-            Função que recebe o payload da telemetria e monta a struct que o
-            carro envia, qualquer alteração no pacote da CAN deve ser
-            documentada e registrada aqui.
+            Função que recebe o payload da telemetria, desempacota os dados
+            brutos e os converte para unidades físicas legíveis.
         """
-        if len(payload) != struct.calcsize(self.payload_fmt):
+        expected_size = struct.calcsize(self.payload_fmt)
+        if len(payload) != expected_size:
             raise ValueError(
-                f"[DATA] Tamanho do payload inesperado: {len(payload)}\n"
-                f"Esperado: {struct.calcsize(self.payload_fmt)}\n"
+                f"[DATA] Tamanho do payload inesperado: {len(payload)}. "
+                f"Esperado: {expected_size}"
              )
-        (
-            volt, soc, cvt, current, temperature, speed,
-            acc_x, acc_y, acc_z,
-            dps_x, dps_y, dps_z,
-            roll, pitch,
-            rpm, flags,
-            latitude, longitude,
-            timestamp
-        ) = struct.unpack(self.payload_fmt, payload)
+        
+        raw = struct.unpack(self.payload_fmt, payload)
 
-        return {
-            "accx": acc_x,
-            "accy": acc_y,
-            "accz": acc_z,
-            "dpsx": dps_x,
-            "dpsy": dps_y,
-            "dpsz": dps_z,
-            "roll": roll,
-            "pitch": pitch,
-            "rpm": rpm,
-            "vel": speed,
-            "temp_motor": temperature,
-            "soc": soc,
-            "temp_cvt": cvt,
-            "volt": volt,
-            "current": current,
-            "flags": flags,
-            "latitude": latitude,
-            "longitude": longitude,
-            "timestamp": timestamp,
+        # Mapeia e converte os dados brutos para um dicionário com unidades físicas
+        # As fórmulas de conversão devem corresponder às do firmware ou do datasheet do sensor.
+        processed_data = {
+            "volt": raw[0],
+            "soc": raw[1],
+            "temp_cvt": raw[2],
+            "current": raw[3],
+            "temperature": raw[4],
+            "speed": raw[5],
+            
+            # Conversão do Acelerômetro (G-force)
+            "acc_x": (raw[6] * 0.061) / 1000.0,
+            "acc_y": (raw[7] * 0.061) / 1000.0,
+            "acc_z": (raw[8] * 0.061) / 1000.0,
+
+            # Conversão do Giroscópio (graus por segundo)
+            # NOTA: O fator 70.0 é um valor comum para giroscópios (mdps/LSB).
+            # Mas sempre é válido verificar no datasheet
+            "dps_x": (raw[9] * 70.0) / 1000.0,
+            "dps_y": (raw[10] * 70.0) / 1000.0,
+            "dps_z": (raw[11] * 70.0) / 1000.0,
+
+            "roll": raw[12],
+            "pitch": raw[13],
+            "rpm": raw[14],
+            "flags": raw[15],
+            "latitude": raw[16],
+            "longitude": raw[17],
+            "timestamp": raw[18],
         }
+
+        return processed_data
 
     def close_db(self):
         """

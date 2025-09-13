@@ -1,120 +1,89 @@
-"""
-    Arquivo principal do servidor de telemetria da Mangue Baja.
-    Aqui é realizada a captura, armazenamento e envio de dados recebidos do
-    carro.
-"""
-
-import json
 import asyncio
-from dotenv import dotenv_values
+import json
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
-from fastapi import FastAPI, WebSocket
-from starlette.websockets import WebSocketDisconnect
-
+from settings import settings
+from services.parser import DataParser
+from services.database import DatabaseService
 from telemetry.mangue_telemetry import MangueTelemetry
-from data.mangue_data import MangueData
 from simuladores.python.simulador import Simuladores
 
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
 
-# Definindo constantes
-SIMULAR_INTERFACE = False
-credentials = dotenv_values("./credentials.env")
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
 
-# Construindo classes
-app = FastAPI()
-telemetry = MangueTelemetry(
-    hostname=credentials["HOSTNAME"],
-    port=credentials["PORT"],
-    username=credentials["USERNAME"],
-    password=credentials["PASSWORD"]
-)
-data = MangueData()
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+# Create instances of our services and managers
+# These will be treated like singletons for the app's lifespan
+manager = ConnectionManager()
+parser = DataParser()
 sim = Simuladores()
+db_service = DatabaseService(db_path=settings.database_path)
+telemetry_service = MangueTelemetry(
+    hostname=settings.mqtt_hostname,
+    port=settings.mqtt_port,
+    username=settings.mqtt_username,
+    password=settings.mqtt_password
+)
 
-# Criando variáveis globais
-# Set (conjunto) para armazenar todas as conexões WebSocket ativas.
-# Criar um conjunto evita repetições de maneira elegante.
-active_websockets = set()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Code to run on startup
+    if not settings.simular_interface:
+        await telemetry_service.start()
+        db_service.connect()
+        db_service.create_schema()
+        db_service.start_new_session(label="Produção")
+    
+    # Start the main broadcast loop
+    asyncio.create_task(broadcast_telemetry())
+    
+    yield
+    
+    # Code to run on shutdown
+    if not settings.simular_interface:
+        await telemetry_service.stop()
+        db_service.close()
 
+app = FastAPI(lifespan=lifespan)
 
 async def broadcast_telemetry():
-    """
-    Função de background que gera dados de simulação e envia
-    para todos os clientes conectados.
-    """
-    try:
-        while True:
-            if SIMULAR_INTERFACE:
-                sim_data = await sim.gerar_dados()
-                message = json.dumps(sim_data)
-                # Cria uma lista de mensagens a serem enviadas.
-                await asyncio.gather(
-                    *[ws.send_text(message) for ws in active_websockets],
-                    # Permite que as tarefas falhem sem parar o gather.
-                    return_exceptions=True
-                )
+    while True:
+        try:
+            if settings.simular_interface:
+                data_to_send = await sim.gerar_dados()
             else:
-                tel_data = await telemetry.get_payload()
-                data_parsed = data.parse_mqtt_packet(tel_data)
-                message = json.dumps(data_parsed)
-                await asyncio.gather(
-                    *[ws.send_text(message) for ws in active_websockets],
-                    return_exceptions=True
-                )
+                payload = await telemetry_service.get_payload()
+                data_to_send = parser.parse_mqtt_packet(payload)
+                # db_service.save_telemetry_data(data_to_send) # Uncomment to save data
+            
+            message = json.dumps(data_to_send)
+            await manager.broadcast(message)
 
-            # Pausa para evitar sobrecarga.
-            await asyncio.sleep(0.5)
+        except Exception as e:
+            print(f"[Broadcast Error] {e}")
 
-    except asyncio.CancelledError:
-        print("[WebSocket] Task de broadcast cancelada.")
-
-
-@app.on_event("startup")
-async def startup_event():
-    """
-        Inicia todos os processos essenciais para a abertura do servidor e suas
-        conexões.
-    """
-    if SIMULAR_INTERFACE:
-        # Cria e inicia a tarefa de background para simulação.
-        # Note que dados não serão salvos em simulações de interface.
-        asyncio.create_task(broadcast_telemetry())
-    else:
-        # Inicia a conexão MQTT e o banco de dados.
-        await telemetry.start()
-        print("[Telemetry] Telemetry started")
-        data.connect_to_db()
-        print("[Database] Conected the db")
-        data.create_schema()
-        print("[Database] Created the db")
-        data.start_new_session(label="Teste de produção 1")
-        print("[Database] Started new section")
-        asyncio.create_task(broadcast_telemetry())
-        print("[Telemetry] Started broadcasting")
+        await asyncio.sleep(settings.broadcast_delay_seconds)
 
 
 @app.websocket("/ws/telemetry")
-async def telemetry_endpoint(websocket: WebSocket):
-    """
-        Endpoint que gerencia a conexão do cliente, adicionando-o
-        à lista de conexões ativas.
-    """
-    await websocket.accept()
-    print("[WebSocket] Novo cliente conectado.")
-    active_websockets.add(websocket)
+async def websocket_endpoint(websocket: WebSocket):
+    await manager.connect(websocket)
     try:
-        await websocket.receive_text()
+        while True:
+            # Keep connection alive, can add logic here to handle client messages
+            await websocket.receive_text()
     except WebSocketDisconnect:
+        manager.disconnect(websocket)
         print("[WebSocket] Cliente desconectado.")
-    finally:
-        active_websockets.remove(websocket)
-
-
-@app.on_event("shutdown")
-async def shutdown_event():
-    """
-        Finaliza todos os processos abertos para fechar todas as conexões.
-    """
-    if not SIMULAR_INTERFACE:
-        await telemetry.stop()
-        data.close_db()
