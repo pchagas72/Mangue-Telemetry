@@ -12,10 +12,6 @@ from telemetry.telemetry_serial import SerialTelemetry
 from telemetry.mangue_telemetry import MangueTelemetry
 from simuladores.python.simulador import Simuladores
 
-# Setting up logger
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
-
 # Setting up components
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -43,45 +39,6 @@ manager = ConnectionManager()
 parser = DataParser(payload_fmt=settings.serial_packet_format)
 db_service = DatabaseService(db_path=settings.database_path)
 telemetry_service = None # Initialized in lifespan
-
-# Collects data source
-def get_telemetry_service():
-    """Selects and returns the appropriate telemetry service based on settings."""
-    source = settings.data_source
-    if source == "serial":
-        logger.info("Using LoRa Serial as data source.")
-        return SerialTelemetry(
-            port=settings.serial_port,
-            baudrate=settings.serial_baudrate,
-            packet_format=settings.serial_packet_format
-        )
-    elif source == "mqtt":
-        logger.info("Using MQTT as data source.")
-        return MangueTelemetry(
-            hostname=settings.mqtt_hostname,
-            port=settings.mqtt_port,
-            username=settings.mqtt_username,
-            password=settings.mqtt_password
-        )
-    elif source == "simulator":
-        logger.info("Using Python Simulator as data source.")
-        return Simuladores()
-    else:
-        raise ValueError(f"Unknown data source in settings: {source}")
-
-# fastAPI lifespan
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Manages application startup and shutdown events."""
-    global telemetry_service
-    telemetry_service = get_telemetry_service()
-telemetry_service = None
-
-telemetry_service = SerialTelemetry(
-    port=settings.serial_port,
-    baudrate=settings.serial_baudrate,
-    packet_format=settings.serial_packet_format
-)
 
 def get_telemetry_service():
     """

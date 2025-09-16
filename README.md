@@ -92,90 +92,6 @@ To make the system accessible to all team members, regardless of their technical
 | Data storage with SQLite | ✅ |
 | Data simulation for testing | ✅ |
 | ENV-based authentication | ✅ |
-| Telemetry broadcast via LoRa |✅|
-| Replay of past sessions | 🚧 |
-| Debug and ECU "box" interface | 🚧 |
-| Apply filters from iLogger | 🚧 |
-| Build executable | 🚧 |
-| **Frontend (interface)** | |
-| Data reception and processing | ✅ |
-| Real-time map | ✅ |
-| Real-time car model | ✅ |
-| Real-time serial analysis | ✅ |
-| Display of all critical data | ✅ |
-| Battery status | ✅ |
-| Real-time graphs | ✅ |
-| Replay interface | 🚧 |
-| Predictive failure neural network | 🚧 |
-| Debug and ECU "box" interface | 🚧 |
-| Data visualization page for iLogger | 🚧 |
-| Build executable | 🚧 |
-
----
-
-=======
-## Table of Contents
-
-- [About the Project](#about-the-project)
-  - [Backend](#backend)
-  - [Frontend](#frontend)
-  - [Starter Script](#starter-script)
-- [Features](#features)
-- [Getting Started](#getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-- [Usage](#usage)
-  - [Running the System](#running-the-system)
-  - [Configuration](#configuration)
-- [Project Structure](#project-structure)
-- [License](#license)
-- [Contact](#contact)
-
----
-
-## About the Project
-
-This telemetry system is designed to be a high-performance, user-friendly tool for monitoring all critical aspects of our Baja SAE vehicle in real-time. We chose a modern tech stack to ensure the system is both powerful and easy to maintain.
-
-### Backend
-
-The backend is built with **Python** and **FastAPI**, providing a high-performance API and WebSocket server. The key advantages of this approach are:
-
-- **Simplicity**: Python's clean syntax makes the code accessible to the entire team.  
-- **Extensive Libraries**: We leverage powerful libraries for MQTT, WebSocket communication, and more.  
-- **Performance**: FastAPI provides a level of performance comparable to Go and Node.js.  
-
-### Frontend
-
-The frontend is a **React application** built with **TypeScript** and **Vite**. This combination offers:
-
-- **Rich UI**: A wide variety of React libraries allow for the creation of a dynamic and responsive user interface.  
-- **Type Safety**: TypeScript helps to catch errors early in the development process.  
-- **High Performance**: The frontend is capable of rendering a high volume of data points without noticeable latency.  
-
-### Starter Script
-
-To make the system accessible to all team members, regardless of their technical expertise, we have included a **`starter.py`** script. This script provides a simple graphical interface to:
-
-- Install all necessary dependencies.  
-- Start and stop the backend and frontend servers.  
-- Open the telemetry interface in a web browser.  
-
----
-
-## Features
-
-| Feature | Status |
-|---------|--------|
-| **Starter** | |
-| Simple Installer and Launcher | ✅ |
-| Turn the starter into an app hub | 🚧 |
-| Complete Documentation | 🚧 |
-| **Backend (server)** | |
-| Telemetry broadcast via MQTT | ✅ |
-| Data storage with SQLite | ✅ |
-| Data simulation for testing | ✅ |
-| ENV-based authentication | ✅ |
 | Telemetry broadcast via LoRa | ✅ |
 | Replay of past sessions | 🚧 |
 | Debug and ECU "box" interface | 🚧 |
@@ -197,7 +113,6 @@ To make the system accessible to all team members, regardless of their technical
 
 ---
 
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
 ## Getting Started
 
 To get a local copy up and running, follow these simple steps.
