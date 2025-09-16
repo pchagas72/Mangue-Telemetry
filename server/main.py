@@ -12,17 +12,14 @@ from telemetry.telemetry_serial import SerialTelemetry
 from telemetry.mangue_telemetry import MangueTelemetry
 from simuladores.python.simulador import Simuladores
 
-<<<<<<< HEAD
 # Setting up logger
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
 # Setting up components
-=======
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
 
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
 class ConnectionManager:
     def __init__(self):
         self.active_connections: list[WebSocket] = []
@@ -35,20 +32,16 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
-<<<<<<< HEAD
         # Concurrent sending
         await asyncio.gather(*[connection.send_text(message) for connection in self.active_connections])
-=======
         # Change this to concurrent sending
         for connection in self.active_connections:
             await connection.send_text(message)
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
 
 # Building services
 manager = ConnectionManager()
 parser = DataParser(payload_fmt=settings.serial_packet_format)
 db_service = DatabaseService(db_path=settings.database_path)
-<<<<<<< HEAD
 telemetry_service = None # Initialized in lifespan
 
 # Collects data source
@@ -82,7 +75,6 @@ async def lifespan(app: FastAPI):
     """Manages application startup and shutdown events."""
     global telemetry_service
     telemetry_service = get_telemetry_service()
-=======
 telemetry_service = None
 
 telemetry_service = SerialTelemetry(
@@ -127,7 +119,6 @@ async def lifespan(app: FastAPI):
         db_service.connect()
         db_service.create_schema()
         db_service.start_new_session(label="Produção Serial")
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
 
     db_service.connect()
     db_service.create_schema()
@@ -135,13 +126,9 @@ async def lifespan(app: FastAPI):
 
     broadcast_task = asyncio.create_task(broadcast_telemetry())
     yield
-<<<<<<< HEAD
     broadcast_task.cancel()
-    if settings.data_source != "simulator":
-=======
     # Code to run on shutdown
     if  settings.data_source != "simulator":
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
         await telemetry_service.stop()
 
     db_service.close()
@@ -158,10 +145,7 @@ async def broadcast_telemetry():
     while True:
         print("new_loop")
         try:
-<<<<<<< HEAD
             data_to_send = None
-=======
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
             if settings.data_source == "simulator":
                 data_to_send = await telemetry_service.gerar_dados()
             else:

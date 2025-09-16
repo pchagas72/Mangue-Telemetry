@@ -2,14 +2,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 
 class Settings(BaseSettings):
-<<<<<<< HEAD
     # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "mqtt"
     data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
-=======
     # Server serttings
     data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
     broadcast_delay_seconds: float = 0.01
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
 
     # MQTT Broker Settings
     mqtt_hostname: str = ""
@@ -25,9 +22,6 @@ class Settings(BaseSettings):
     # Database Settings
     database_path: str = "./data/database/database.db"
 
-<<<<<<< HEAD
 # Exports the settings
-=======
 # Single customized settings entity
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
 settings = Settings()
