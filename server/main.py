@@ -1,13 +1,19 @@
 import asyncio
 import json
+import logging
 from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 
 from settings import settings
 from services.parser import DataParser
 from services.database import DatabaseService
 from telemetry.telemetry_serial import SerialTelemetry
+from telemetry.mangue_telemetry import MangueTelemetry
 from simuladores.python.simulador import Simuladores
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
 class ConnectionManager:
     def __init__(self):
@@ -21,16 +27,16 @@ class ConnectionManager:
         self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
+        # Change this to concurrent sending
         for connection in self.active_connections:
             await connection.send_text(message)
 
-# Create instances of the services and managers
+# Building services
 manager = ConnectionManager()
 parser = DataParser(payload_fmt=settings.serial_packet_format)
 sim = Simuladores()
 db_service = DatabaseService(db_path=settings.database_path)
-
-# Initialize the serial telemetry service with the correct port and packet format
+telemetry_service = None
 
 telemetry_service = SerialTelemetry(
     port=settings.serial_port,
@@ -38,13 +44,38 @@ telemetry_service = SerialTelemetry(
     packet_format=settings.serial_packet_format
 )
 
+def get_telemetry_service():
+    """
+        Gets the selected telemetry service (see settings.py)
+    """
+    source = settings.data_source
+    if source == "serial":
+        logger.info("Using LoRa serial as data source")
+        return SerialTelemetry(port=settings.serial_port,
+                               baudrate=settings.serial_baudrate,
+                               packet_format=settings.serial_packet_format)
+    elif source == "mqtt":
+        logger.info("Using MQTT as data source.")
+        return MangueTelemetry(hostname=settings.mqtt_hostname,
+                               port=settings.mqtt_port,
+                               username=settings.mqtt_username,
+                               password=settings.mqtt_password)
+    elif source == "simulator":
+        logger.info("Using simulated data source.")
+        return Simuladores()
+    else:
+        raise ValueError(f"Unknown data source selected, check settings.py")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Manages the application's startup and shutdown events.
     """
     # Code to run on startup
-    if not settings.simular_interface:
+    global telemetry_service
+    telemetry_service = get_telemetry_service()
+
+    if settings.data_source != "simulator":
         await telemetry_service.start()
         db_service.connect()
         db_service.create_schema()
@@ -54,7 +85,7 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(broadcast_telemetry())
     yield
     # Code to run on shutdown
-    if not settings.simular_interface:
+    if  settings.data_source != "simulator":
         await telemetry_service.stop()
         db_service.close()
 
@@ -67,8 +98,8 @@ async def broadcast_telemetry():
     """
     while True:
         try:
-            if settings.simular_interface:
-                data_to_send = await sim.gerar_dados()
+            if settings.data_source == "simulator":
+                data_to_send = await telemetry_service.gerar_dados()
             else:
                 payload = await telemetry_service.get_payload()
                 if payload:

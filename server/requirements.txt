@@ -18,10 +18,12 @@ packaging==25.0
 paho-mqtt==2.1.0
 platformdirs==4.3.8
 pydantic==2.11.7
+pydantic-settings==2.10.1
 pydantic_core==2.33.2
 pyinstaller==6.15.0
 pyinstaller-hooks-contrib==2025.8
 pylint==3.3.8
+pyserial==3.5
 python-dotenv==1.1.1
 PyYAML==6.0.2
 setuptools==80.9.0
