@@ -198,8 +198,6 @@ You can use the `credentials.env` file as a template.
 ├── server/           # Backend (Python + FastAPI + MQTT)
 └── starter.py        # The starter script
 ```
-
-=======
 ```
 
 Install backend dependencies:
