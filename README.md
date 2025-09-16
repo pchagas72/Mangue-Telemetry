@@ -15,7 +15,6 @@ If you find this project useful, please consider giving it a ⭐!
 
 ---
 
-<<<<<<< HEAD
 ## Screenshots
 
 Here are some previews of the telemetry system in action:
