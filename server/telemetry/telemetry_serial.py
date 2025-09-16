@@ -3,41 +3,48 @@ import asyncio
 import serial
 import struct
 from collections import deque
+import logging # Use the logging module
+
+logger = logging.getLogger(__name__)
 
 class SerialTelemetry:
     """
-        Handles receiving telemetry data from a serial port.
+    Handles receiving telemetry data from a serial port using a robust queue.
     """
-
     def __init__(self, port: str, baudrate: int, packet_format: str):
         self.port = port
         self.baudrate = baudrate
         self.packet_format = packet_format
         self.packet_size = struct.calcsize(self.packet_format)
         self.start_marker = b'\xaa\xbb\xcc\xdd'
-        self._latest_payload: bytes | None = None
-        self._new_payload_event = asyncio.Event()
         self._task = None
         self.ser = None
+        self.queue = asyncio.Queue(maxsize=10)
 
     async def start(self):
         """
-            Initializes the serial connection and starts listening for data.
+        Initializes the serial connection asynchronously and starts listening for data.
         """
+        loop = asyncio.get_running_loop()
         try:
-            self.ser = serial.Serial(self.port, self.baudrate, timeout=1)
-            print(f"[Serial] Conectado na porta {self.port}")
+            # --- FIX: Run the blocking serial connection in an executor ---
+            self.ser = await loop.run_in_executor(
+                None,
+                lambda: serial.Serial(self.port, self.baudrate, timeout=1)
+            )
+            logger.info(f"[Serial] Conectado na porta {self.port}")
             self._task = asyncio.create_task(self._listen())
         except serial.SerialException as e:
-            print(f"[Serial] Erro ao abrir a porta serial: {e}")
+            logger.error(f"[Serial] Erro ao abrir a porta serial: {e}")
             self._task = None
 
     async def _listen(self):
         """
-            Listens for a start marker and then reads a complete packet.
+        Listens for a start marker, reads a complete packet, and puts it on the queue.
         """
         loop = asyncio.get_event_loop()
         buffer = deque(maxlen=len(self.start_marker))
+        logger.info("[Serial] Listening for incoming data...")
 
         while True:
             try:
@@ -54,25 +61,20 @@ class SerialTelemetry:
                     )
                     
                     if len(payload) == self.packet_size:
-                        self._latest_payload = payload
-                        self._new_payload_event.set()
-                        self._new_payload_event.clear()
+                        logger.info(f"[Serial] Pacote completo recebido ({self.packet_size} bytes)")
+                        if self.queue.full():
+                            await self.queue.get() # Discard oldest if full
+                        await self.queue.put(payload)
 
             except Exception as e:
-                print(f"[Serial] Erro durante a leitura: {e}")
+                logger.error(f"[Serial] Erro durante a leitura: {e}", exc_info=True)
                 break
 
     async def get_payload(self) -> bytes:
-        """
-            Returns the latest data packet from the serial port.
-        """
-        await self._new_payload_event.wait()
-        return self._latest_payload
+        """Returns the latest data packet from the queue."""
+        return await self.queue.get()
 
     async def stop(self):
-        """
-            Closes the serial connection and stops the listening task.
-        """
         if self._task:
             self._task.cancel()
             try:
@@ -81,4 +83,4 @@ class SerialTelemetry:
                 pass
         if self.ser and self.ser.is_open:
             self.ser.close()
-            print("[Serial] Conexão serial fechada.")
+            logger.info("[Serial] Conexão serial fechada.")
