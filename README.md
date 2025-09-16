@@ -77,7 +77,7 @@ To make the system accessible to all team members, regardless of their technical
 | Data storage with SQLite | ✅ |
 | Data simulation for testing | ✅ |
 | ENV-based authentication | ✅ |
-| Telemetry broadcast via LoRa | 🚧 |
+| Telemetry broadcast via LoRa | ✅ |
 | Replay of past sessions | 🚧 |
 | Debug and ECU "box" interface | 🚧 |
 | Apply filters from iLogger | 🚧 |
