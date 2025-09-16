@@ -213,7 +213,6 @@ Clone the repo:
 
 ```bash
 git clone https://github.com/pchagas72/mangue-telemetry.git
-<<<<<<< HEAD
 ```
 
 Install backend dependencies:
@@ -356,7 +355,6 @@ You can use the `credentials.env` file as a template.
 └── starter.py        # The starter script
 ```
 
->>>>>>> d723a362756af9dadec4073b8ed0d8b5da1f5067
 ---
 
 ## License
