@@ -2,10 +2,9 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 
 class Settings(BaseSettings):
-    # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "mqtt"
-    data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
     # Server serttings
-    data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
+    # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "mqtt"
+    data_source: Literal["serial", "mqtt", "simulator"] = "serial"
     broadcast_delay_seconds: float = 0.01
 
     # MQTT Broker Settings
