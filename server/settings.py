@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     mqtt_username: str
     mqtt_password: str
 
+    # LoRa serial receiver settings
+    serial_port: str = "/dev/pts/2"
+    serial_baudrate: int = 115200
+    serial_packet_format: str = "<fBBfBH hhhhhh hh H BddI"
+
     # Database settings
     database_path: str = "./data/database/database.db"
 
