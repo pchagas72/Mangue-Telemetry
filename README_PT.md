@@ -87,7 +87,7 @@ Inclui o **starter.py**, que facilita o uso para toda a equipe:
 | Armazenamento em SQLite        | ✅      |
 | Simulação de dados             | ✅      |
 | Autenticação via `.env`        | ✅      |
-| Broadcast via LoRa             | 🚧      |
+| Broadcast via LoRa             | ✅      |
 | Replay de sessões passadas     | 🚧      |
 | Interface de debug/ECU box     | 🚧      |
 | Filtros do iLogger             | 🚧      |
