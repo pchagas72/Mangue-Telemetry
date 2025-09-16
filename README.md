@@ -1,160 +1,197 @@
-# Mangue Baja Team Telemetry System
+# Mangue Baja Telemetry System
 
-[Leia em Português](./README_PT.md)
+![Python](https://img.shields.io/badge/Python-3.11%2B-blue?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-Frontend-61DAFB?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-Frontend-3178C6?logo=typescript&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![Status](https://img.shields.io/badge/Status-Active-success)
 
-This repository was created by me for the Mangue Baja team, of which I am proudly a member.
+Welcome to the official repository for the **Mangue Baja Telemetry System**.  
+This project was developed by the Mangue Baja team to provide a robust, real-time telemetry solution for our Baja SAE vehicle.  
+We believe in the power of open source and are excited to share our work with the Baja SAE community.
 
-Efficient and elegant code is very important, so feel free to explore the source code.  
-
-If you are from another team, you are welcome to use it according to the license (I will know!).  
-
-Don’t forget to leave a star, thank you!  
-
----
-
-## Why Things Are the Way They Are
-
-### Backend in Python
-
-The backend (server) in Python has its pros and cons. At first, I considered using C, Go, or Rust. However, Python proved more useful—not only due to its simpler syntax, which makes the code more understandable for the whole team, but also because of the large number of libraries related to connectivity.  
-
-With Python, I was able to easily implement MQTT, WebSocket, API routing, and more. Considering this, and given the performance offered by FastAPI, I chose Python for now.  
-
-That said, I would eventually like to move the backend to C or Rust.  
-
-### Frontend in React-TS
-
-The frontend in React-TS is very useful since it provides a development environment with a wide variety of React libraries and the speed and type safety of TypeScript.  
-
-Using plain JavaScript, it wasn’t possible to render more than 20 data points per second on the charts. Now, with React, the interface smoothly renders all the telemetry data we need, without noticeable latency.  
-
-### Starter
-
-The "starter" script wasn’t an option—it was a necessity for the team.  
-
-If a non-technical member needs to use the interface, running a shell script is nearly impossible (especially since most people use Windows). Asking them to install prerequisites, start the backend, and then launch the interface from the terminal is simply too much.  
-
-The starter saves time and makes the system accessible to everyone—not just members with electronics or programming knowledge.  
+If you find this project useful, please consider giving it a ⭐!
 
 ---
 
-## Features / TODO
+## Table of Contents
 
-### Starter
-- Simple installer and launcher [X]  
-- Turn the starter into an app hub [ ]  
-- Complete documentation [ ]  
-
-### Backend (server)
-- Telemetry broadcast via MQTT [X]  
-- Data storage with SQLite [X]  
-- Data simulation for testing [X]  
-- ENV-based authentication [X]  
-- Telemetry broadcast via LoRa [ ]  
-- Replay of past sessions [ ]  
-- Debug and ECU "box" interface [ ]  
-- Apply filters from iLogger [ ]  
-- Build executable [ ]  
-
-### Frontend (interface)
-- Data reception and processing [X]  
-- Real-time map [X]  
-- Real-time car model [X]  
-- Real-time serial analysis [X]  
-- Display of temperatures, speed, RPM, accelerations, GPS position, and angle [X]  
-- Battery status [X]  
-- Graphs for speed, RPM, temperatures, and accelerations [X]  
-- Replay interface [ ]  
-- Predictive failure neural network [ ]  
-- Debug and ECU "box" interface [ ]  
-- Data visualization page for iLogger [ ]  
-- Build executable [ ]  
+- [About the Project](#about-the-project)
+  - [Backend](#backend)
+  - [Frontend](#frontend)
+  - [Starter Script](#starter-script)
+- [Features](#features)
+- [Getting Started](#getting-started)
+  - [Prerequisites](#prerequisites)
+  - [Installation](#installation)
+- [Usage](#usage)
+  - [Running the System](#running-the-system)
+  - [Configuration](#configuration)
+- [Project Structure](#project-structure)
+- [License](#license)
+- [Contact](#contact)
 
 ---
 
-## How to Use
+## About the Project
 
-### Technologies
-- Python 3.11+  
-- FastAPI + Uvicorn  
-- MQTT (aiomqtt / paho-mqtt)  
-- SQLite  
-- React + Vite (frontend)  
+This telemetry system is designed to be a high-performance, user-friendly tool for monitoring all critical aspects of our Baja SAE vehicle in real-time. We chose a modern tech stack to ensure the system is both powerful and easy to maintain.
+
+### Backend
+
+The backend is built with **Python** and **FastAPI**, providing a high-performance API and WebSocket server. The key advantages of this approach are:
+
+- **Simplicity**: Python's clean syntax makes the code accessible to the entire team.  
+- **Extensive Libraries**: We leverage powerful libraries for MQTT, WebSocket communication, and more.  
+- **Performance**: FastAPI provides a level of performance comparable to Go and Node.js.  
+
+### Frontend
+
+The frontend is a **React application** built with **TypeScript** and **Vite**. This combination offers:
+
+- **Rich UI**: A wide variety of React libraries allow for the creation of a dynamic and responsive user interface.  
+- **Type Safety**: TypeScript helps to catch errors early in the development process.  
+- **High Performance**: The frontend is capable of rendering a high volume of data points without noticeable latency.  
+
+### Starter Script
+
+To make the system accessible to all team members, regardless of their technical expertise, we have included a **`starter.py`** script. This script provides a simple graphical interface to:
+
+- Install all necessary dependencies.  
+- Start and stop the backend and frontend servers.  
+- Open the telemetry interface in a web browser.  
 
 ---
 
-#### Project Structure
+## Features
+
+| Feature | Status |
+|---------|--------|
+| **Starter** | |
+| Simple Installer and Launcher | ✅ |
+| Turn the starter into an app hub | 🚧 |
+| Complete Documentation | 🚧 |
+| **Backend (server)** | |
+| Telemetry broadcast via MQTT | ✅ |
+| Data storage with SQLite | ✅ |
+| Data simulation for testing | ✅ |
+| ENV-based authentication | ✅ |
+| Telemetry broadcast via LoRa | 🚧 |
+| Replay of past sessions | 🚧 |
+| Debug and ECU "box" interface | 🚧 |
+| Apply filters from iLogger | 🚧 |
+| Build executable | 🚧 |
+| **Frontend (interface)** | |
+| Data reception and processing | ✅ |
+| Real-time map | ✅ |
+| Real-time car model | ✅ |
+| Real-time serial analysis | ✅ |
+| Display of all critical data | ✅ |
+| Battery status | ✅ |
+| Real-time graphs | ✅ |
+| Replay interface | 🚧 |
+| Predictive failure neural network | 🚧 |
+| Debug and ECU "box" interface | 🚧 |
+| Data visualization page for iLogger | 🚧 |
+| Build executable | 🚧 |
+
+---
+
+## Getting Started
+
+To get a local copy up and running, follow these simple steps.
+
+### Prerequisites
+
+- Python **3.11+**  
+- Node.js and npm  
+
+### Installation
+
+Clone the repo:
+
+```bash
+git clone https://github.com/pchagas72/mangue-telemetry.git
+```
+
+Install backend dependencies:
+
+```bash
+cd server
+python3 -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+pip install -r requirements.txt
+```
+
+Install frontend dependencies:
+
+```bash
+cd ../interface
+npm install
+```
+
+---
+
+## Usage
+
+You can run the system using either the **starter script** or by running the frontend and backend separately.
+
+### Running the System
+
+The easiest way to get started is to use the starter script:
+
+```bash
+python3 starter.py
+```
+
+Alternatively, you can run the frontend and backend in separate terminals:
+
+**Backend:**
+
+```bash
+cd server
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+python3 run.py
+```
+
+**Frontend:**
+
+```bash
+cd interface
+npm run dev
+```
+
+The interface will be available at:  
+👉 [http://localhost:5173](http://localhost:5173)
+
+### Configuration
+
+The server can be configured by creating a `.env` file in the **server** directory.  
+You can use the `credentials.env` file as a template.
+
+---
+
+## Project Structure
+
 ```
 .
 ├── LICENSE
 ├── README.md
 ├── interface/        # Frontend (React + Vite + TypeScript)
 ├── server/           # Backend (Python + FastAPI + MQTT)
+└── starter.py        # The starter script
 ```
 
 ---
 
-#### Backend (server)
+## License
 
-**1. Create and activate a virtual environment**
-
-```bash
-cd server
-python3 -m venv venv
-source venv/bin/activate   # Linux/macOS
-venv\Scriptsctivate      # Windows
-```
-
-**2. Install dependencies**
-```bash
-pip install -r requirements.txt
-```
-
-**3. Configure environment variables**  
-Create a `.env` file based on `credentials.env`, containing:
-
-```
-HOSTNAME=broker.example.com
-PORT=1883
-USERNAME=user
-PASSWORD=pass
-```
-
-**4. Run the server**
-```bash
-python3 run.py
-```
-
-Make sure to adjust the code for the CAN package of your car.  
-
-_Read the code!_  
+Distributed under the **MIT License**.  
+See `LICENSE` for more information.
 
 ---
 
-#### Frontend (interface)
+## Contact
 
-**1. Install dependencies**
-```bash
-cd interface
-npm install
-```
-
-**2. Make necessary adjustments**  
-If using a different CAN package/protocol, modify:  
-`./interface/src/hooks/useTelemetry.ts`  
-`./interface/src/pages/Dashboard.ts`  
-(and others if needed).  
-
-**3. Run the application**
-```bash
-npm run dev
-```
-
-The interface will be available at:  
-👉 [http://localhost:5173](http://localhost:5173)  
-
----
-
-## Reminders
-
-Thank you for using our software! Please remember to always respect the license.  
+🔗 Project Link: [https://github.com/pchagas72/mangue-telemetry](https://github.com/pchagas72/mangue-telemetry)
