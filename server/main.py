@@ -70,15 +70,15 @@ async def lifespan(app: FastAPI):
 
     if settings.data_source != "simulator":
         await telemetry_service.start()
+        db_service.connect()
+        db_service.create_schema()
+        db_service.start_new_session(label=f"Sessão: {settings.data_source.upper()}")
+        broadcast_task = asyncio.create_task(broadcast_telemetry())
 
-    db_service.connect()
-    db_service.create_schema()
-    db_service.start_new_session(label=f"Sessão: {settings.data_source.upper()}")
-
-    broadcast_task = asyncio.create_task(broadcast_telemetry())
     yield
     broadcast_task.cancel()
     # Code to run on shutdown
+
     if  settings.data_source != "simulator":
         await telemetry_service.stop()
 
