@@ -30,9 +30,6 @@ class ConnectionManager:
     async def broadcast(self, message: str):
         # Concurrent sending
         await asyncio.gather(*[connection.send_text(message) for connection in self.active_connections])
-        # Change this to concurrent sending
-        for connection in self.active_connections:
-            await connection.send_text(message)
 
 # Building services
 manager = ConnectionManager()
