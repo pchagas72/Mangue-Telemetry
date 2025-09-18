@@ -189,7 +189,7 @@ Use `credentials.env` como modelo.
 
 ## 📜 Licença
 
-Distribuído sob a licença MIT. Veja `LICENSE` para mais detalhes.
+Distribuído sob uma versão modificada da licença MIT. Veja `LICENSE` para mais detalhes.
 
 ---
 

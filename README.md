@@ -272,7 +272,7 @@ You can use the `credentials.env` file as a template.
 
 ## License
 
-Distributed under the **MIT License**.  
+Distributed under a **Modified MIT License**.  
 See `LICENSE` for more information.
 
 ---

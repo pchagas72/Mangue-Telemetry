@@ -85,7 +85,7 @@ export default function Dashboard() {
                 }
             }
         }
-    }, [data, caminho]);
+    }, [data]);
 
     // Create a default data object for initial render to avoid errors
     const displayData: TelemetriaData = data || {
