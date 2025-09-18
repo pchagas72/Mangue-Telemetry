@@ -125,7 +125,7 @@ private:
 int main() {
     mosqpp::lib_init();
     MQTTClient client("simulador_bin", "YOUR_SERVER_IP_HERE", 1883);  // <- Aqui foi alterado
-    client.username_pw_set("USERNAME", "PASSWORD");
+    client.username_pw_set("", "");
     client.loop_start();
     client.loop_simulacao();
     mosqpp::lib_cleanup();
