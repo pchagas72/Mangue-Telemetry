@@ -56,3 +56,7 @@ dist-ssr
 *.sw?
 
 .vite/*
+
+# Compiled C++ Simulators
+server/simuladores/cpp/mqtt_sim
+server/simuladores/cpp/serial_sim

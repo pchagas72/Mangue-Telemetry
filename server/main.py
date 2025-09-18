@@ -67,6 +67,7 @@ async def lifespan(app: FastAPI):
     # Code to run on startup
     global telemetry_service
     telemetry_service = get_telemetry_service()
+    broadcast_task = None
 
     if settings.data_source != "simulator":
         await telemetry_service.start()
@@ -76,8 +77,9 @@ async def lifespan(app: FastAPI):
         broadcast_task = asyncio.create_task(broadcast_telemetry())
 
     yield
-    broadcast_task.cancel()
-    # Code to run on shutdown
+
+    if broadcast_task:
+        broadcast_task.cancel()
 
     if  settings.data_source != "simulator":
         await telemetry_service.stop()
