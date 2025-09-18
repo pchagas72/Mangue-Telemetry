@@ -73,9 +73,6 @@ async def lifespan(app: FastAPI):
 
     if settings.data_source != "simulator":
         await telemetry_service.start()
-        db_service.connect()
-        db_service.create_schema()
-        db_service.start_new_session(label="Produção Serial")
 
     db_service.connect()
     db_service.create_schema()
@@ -111,7 +108,7 @@ async def broadcast_telemetry():
                     data_to_send = parser.parse_packet(payload)
             
             if data_to_send:
-                #db_service.save_telemetry_data(data_to_send)
+                db_service.save_telemetry_data(data_to_send)
                 
                 # Broadcasting
                 logger.info(f"Broadcasting data: Speed={data_to_send.get('speed')}, RPM={data_to_send.get('rpm')}")
