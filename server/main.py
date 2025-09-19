@@ -10,7 +10,7 @@ from services.parser import DataParser
 from services.database import DatabaseService
 from telemetry.telemetry_serial import SerialTelemetry
 from telemetry.mangue_telemetry import MangueTelemetry
-from simuladores.python.simulador import Simuladores
+from simuladores.python.simulador import Simulador
 
 # Setting up components
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -55,7 +55,7 @@ def get_telemetry_service():
                                password=settings.mqtt_password)
     elif source == "simulator":
         logger.info("Using simulated data source.")
-        return Simuladores()
+        return Simulador()
     else:
         raise ValueError(f"Unknown data source selected, check settings.py")
 
@@ -74,14 +74,15 @@ async def lifespan(app: FastAPI):
         db_service.connect()
         db_service.create_schema()
         db_service.start_new_session(label=f"Sessão: {settings.data_source.upper()}")
-        broadcast_task = asyncio.create_task(broadcast_telemetry())
+
+    broadcast_task = asyncio.create_task(broadcast_telemetry())
 
     yield
 
     if broadcast_task:
         broadcast_task.cancel()
 
-    if  settings.data_source != "simulator":
+    if settings.data_source != "simulator":
         await telemetry_service.stop()
 
     db_service.close()
@@ -96,7 +97,6 @@ async def broadcast_telemetry():
     and broadcasts to all connected WebSocket clients.
     """
     while True:
-        print("new_loop")
         try:
             data_to_send = None
             if settings.data_source == "simulator":
@@ -107,7 +107,8 @@ async def broadcast_telemetry():
                     data_to_send = parser.parse_packet(payload)
             
             if data_to_send:
-                db_service.save_telemetry_data(data_to_send)
+                if settings.data_source != "simulator":
+                    db_service.save_telemetry_data(data_to_send)
                 
                 # Broadcasting
                 logger.info(f"Broadcasting data: Speed={data_to_send.get('speed')}, RPM={data_to_send.get('rpm')}")
