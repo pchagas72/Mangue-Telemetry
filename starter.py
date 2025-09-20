@@ -1,364 +1,273 @@
 import tkinter as tk
-from tkinter import scrolledtext
+from tkinter import scrolledtext, messagebox
 import subprocess
 import threading
 import os
-import signal
 import sys
 import webbrowser
+import queue
+import time
 
-# Constants for file paths based on the project structure
-INTERFACE_DIST_DIR = os.path.join(os.path.dirname(__file__), 'interface', 'dist')
-SERVER_DIR = os.path.join(os.path.dirname(__file__), 'server')
+# --- Configuration Constants ---
+# Get the directory where the script is located
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
+# --- Project Structure Paths ---
+INTERFACE_DIR = os.path.join(SCRIPT_DIR, 'interface')
+INTERFACE_DIST_DIR = os.path.join(INTERFACE_DIR, 'dist')
+SERVER_DIR = os.path.join(SCRIPT_DIR, 'server')
 SERVER_RUN_FILE = os.path.join(SERVER_DIR, 'run.py')
 REQUIREMENTS_FILE = os.path.join(SERVER_DIR, 'requirements.txt')
 VENV_PATH = os.path.join(SERVER_DIR, 'venv')
-WEBSERVER_URL = "http://localhost:3000"
 
-# --- Novo: Determinar o caminho do executável Python e pip dentro do venv ---
-# Define o nome do executável com base no sistema operacional
-PYTHON_EXECUTABLE_NAME = 'python.exe' if sys.platform == 'win32' else 'python'
-PIP_EXECUTABLE_NAME = 'pip.exe' if sys.platform == 'win32' else 'pip'
-# Constrói o caminho completo para os executáveis
-VENV_PYTHON_EXECUTABLE = os.path.join(VENV_PATH, 'Scripts' if sys.platform == 'win32' else 'bin', PYTHON_EXECUTABLE_NAME)
-VENV_PIP_EXECUTABLE = os.path.join(VENV_PATH, 'Scripts' if sys.platform == 'win32' else 'bin', PIP_EXECUTABLE_NAME)
-# ----------------------------------------------------------------------------
+# --- Webserver Configuration ---
+# The port can be found in `package.json` or `vite.config.ts`. Default for `serve` is 3000.
+FRONTEND_PORT = 3000
+WEBSERVER_URL = f"http://localhost:{FRONTEND_PORT}"
 
+# --- Platform-Specific Executable Names ---
+IS_WINDOWS = sys.platform == 'win32'
+PYTHON_EXEC_NAME = 'python.exe' if IS_WINDOWS else 'python'
+PIP_EXEC_NAME = 'pip.exe' if IS_WINDOWS else 'pip'
+VENV_BIN_DIR = 'Scripts' if IS_WINDOWS else 'bin'
+VENV_PYTHON_EXECUTABLE = os.path.join(VENV_PATH, VENV_BIN_DIR, PYTHON_EXEC_NAME)
+VENV_PIP_EXECUTABLE = os.path.join(VENV_PATH, VENV_BIN_DIR, PIP_EXEC_NAME)
 
 class ServerManagerApp:
     """
-    A simple Tkinter application to manage two server processes.
+    A robust Tkinter application to manage the Mangue Telemetry servers.
+    Features non-blocking process handling to prevent UI freezing.
     """
     def __init__(self, root):
         self.root = root
-        self.root.title("Gerenciador de Servidores")
-        self.root.geometry("800x600")
-        
-        # Keep track of the running processes
-        self.serve_process = None
-        self.run_py_process = None
+        self.root.title("Gerenciador de Servidores - Mangue Telemetry")
+        self.root.geometry("850x650")
 
-        # Create and pack UI elements
+        self.processes = {}
+        self.log_queue = queue.Queue()
+
         self.create_widgets()
-        
-        # Bind the window closing event to a handler
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
+        self.log("Bem-vindo ao Gerenciador de Servidores da Mangue Telemetry!")
+        self.log("Verifique se o ambiente virtual e as dependências estão configurados.")
+        self.check_log_queue()
+
     def create_widgets(self):
-        """
-        Sets up the main GUI layout with buttons and a debug terminal.
-        """
-        # Main frame for buttons and terminal
-        main_frame = tk.Frame(self.root, padx=20, pady=20, bg="#f0f0f0")
+        main_frame = tk.Frame(self.root, padx=15, pady=15, bg="#f0f0f0")
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        # Button frame at the top
         button_frame = tk.Frame(main_frame, bg="#f0f0f0")
-        button_frame.pack(pady=10)
+        button_frame.pack(pady=10, fill=tk.X)
 
-        # Start Servers Button
-        self.start_button = tk.Button(
-            button_frame, 
-            text="Iniciar Servidores", 
-            command=self.start_servers,
-            font=("Helvetica", 16, "bold"),
-            bg="#4CAF50", fg="white",
-            activebackground="#45a049",
-            bd=0, relief=tk.FLAT,
-            padx=20, pady=10,
-            cursor="hand2"
-        )
-        self.start_button.pack(side=tk.LEFT, padx=10)
+        self.start_button = self._create_button(button_frame, "Iniciar Servidores", self.start_servers, "#4CAF50")
+        self.stop_button = self._create_button(button_frame, "Parar Servidores", self.stop_servers, "#F44336", state=tk.DISABLED)
+        self.config_button = self._create_button(button_frame, "Configurar Ambiente", self.configure_venv, "#2196F3")
+        self.build_button = self._create_button(button_frame, "Build Frontend", self.build_frontend, "#FF9800")
+        self.browser_button = self._create_button(button_frame, "Abrir Navegador", self.open_in_browser, "#FFC107", state=tk.DISABLED)
 
-        # Stop Servers Button
-        self.stop_button = tk.Button(
-            button_frame, 
-            text="Parar Servidores", 
-            command=self.stop_servers,
-            font=("Helvetica", 16, "bold"),
-            bg="#F44336", fg="white",
-            activebackground="#da190b",
-            bd=0, relief=tk.FLAT,
-            padx=20, pady=10,
-            cursor="hand2",
-            state=tk.DISABLED
-        )
-        self.stop_button.pack(side=tk.LEFT, padx=10)
+        # Pack buttons with expansion
+        for button in button_frame.winfo_children():
+            button.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
 
-        # Configure Venv Button
-        self.config_button = tk.Button(
-            button_frame,
-            text="Configurar Ambiente",
-            command=self.configure_venv,
-            font=("Helvetica", 16, "bold"),
-            bg="#2196F3", fg="white",
-            activebackground="#1e88e5",
-            bd=0, relief=tk.FLAT,
-            padx=20, pady=10,
-            cursor="hand2"
-        )
-        self.config_button.pack(side=tk.LEFT, padx=10)
-
-        # New: Open Browser Button
-        self.browser_button = tk.Button(
-            button_frame,
-            text="Abrir no Navegador",
-            command=self.open_in_browser,
-            font=("Helvetica", 16, "bold"),
-            bg="#FFC107", fg="black",
-            activebackground="#ffb300",
-            bd=0, relief=tk.FLAT,
-            padx=20, pady=10,
-            cursor="hand2",
-            state=tk.DISABLED
-        )
-        self.browser_button.pack(side=tk.LEFT, padx=10)
-
-        # Debug Terminal Label
-        debug_label = tk.Label(
-            main_frame, 
-            text="Terminal de Depuração:", 
-            font=("Helvetica", 12, "bold"),
-            bg="#f0f0f0",
-            anchor="w"
-        )
+        debug_label = tk.Label(main_frame, text="Terminal de Depuração:", font=("Helvetica", 12, "bold"), bg="#f0f0f0", anchor="w")
         debug_label.pack(fill=tk.X, pady=(10, 5))
 
-        # Debug Terminal (ScrolledText)
         self.debug_text = scrolledtext.ScrolledText(
-            main_frame, 
-            wrap=tk.WORD, 
-            state=tk.DISABLED,
-            font=("Courier New", 10),
-            bg="#2c3e50", fg="#ecf0f1",
-            insertbackground="#ecf0f1",
-            relief=tk.FLAT
+            main_frame, wrap=tk.WORD, state=tk.DISABLED,
+            font=("Courier New", 10), bg="#2c3e50", fg="#ecf0f1",
+            insertbackground="#ecf0f1", relief=tk.FLAT
         )
         self.debug_text.pack(fill=tk.BOTH, expand=True)
 
+    def _create_button(self, parent, text, command, bg_color, state=tk.NORMAL):
+        return tk.Button(
+            parent, text=text, command=command, font=("Helvetica", 12, "bold"),
+            bg=bg_color, fg="white", activebackground=bg_color,
+            bd=0, relief=tk.FLAT, padx=15, pady=8, cursor="hand2", state=state
+        )
+
     def start_servers(self):
-        """
-        Starts the `npx serve` and `run.py` processes in separate threads.
-        """
-        if self.serve_process or self.run_py_process:
-            self.log("Servidores já estão rodando.")
+        if self.processes:
+            self.log("ERRO: Servidores já estão rodando.")
             return
 
+        if not os.path.exists(INTERFACE_DIST_DIR):
+             self.log("ERRO: O diretório 'interface/dist' não foi encontrado. Execute o 'Build Frontend' primeiro.")
+             messagebox.showerror("Build Necessário", "O diretório 'interface/dist' não foi encontrado. Por favor, clique em 'Build Frontend' para compilar a interface antes de iniciar os servidores.")
+             return
+
         self.log("Iniciando servidores...")
+        self.update_button_states(is_running=True)
+
+        # --- KEY CHANGE HERE ---
+        # Start backend with the -u flag for unbuffered output
+        backend_command = [VENV_PYTHON_EXECUTABLE, "-u", SERVER_RUN_FILE]
+        self._start_process("backend", backend_command, cwd=SERVER_DIR)
         
-        # Enable the stop button and disable the start button
-        self.start_button.config(state=tk.DISABLED)
-        self.stop_button.config(state=tk.NORMAL)
-        self.browser_button.config(state=tk.NORMAL)
-
-        # Start the first server (npx serve)
-        self.serve_thread = threading.Thread(target=self._start_serve_process, daemon=True)
-        self.serve_thread.start()
-
-        # Start the second server (run.py)
-        self.run_py_thread = threading.Thread(target=self._start_run_py_process, daemon=True)
-        self.run_py_thread.start()
-
-    def _start_serve_process(self):
-        """
-        Helper method to run the npx serve command.
-        """
-        try:
-            # Change directory to the interface/dist folder
-            original_dir = os.getcwd()
-            os.chdir(INTERFACE_DIST_DIR)
-            self.log(f"Executando 'npx serve -s .' no diretório: {os.getcwd()}")
-            
-            self.serve_process = subprocess.Popen(
-                ["npx", "serve", "-s", "."],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1
-            )
-            
-            # Change back to the original directory
-            os.chdir(original_dir)
-            
-            # Read and log the output in a separate thread to prevent blocking
-            self._log_process_output(self.serve_process, "NPM Serve")
-        except FileNotFoundError:
-            self.log("ERRO: 'npx' não foi encontrado. Certifique-se de que o Node.js e o npm estão instalados e no PATH.")
-            self.stop_servers()
-        except Exception as e:
-            self.log(f"ERRO ao iniciar o servidor NPM: {e}")
-            self.stop_servers()
-
-    def _start_run_py_process(self):
-        """
-        Helper method to run the run.py file using the venv's Python interpreter.
-        """
-        try:
-            # --- Modificado para usar o executável do venv ---
-            self.log(f"Executando '{VENV_PYTHON_EXECUTABLE} {SERVER_RUN_FILE}' a partir do diretório: {SERVER_DIR}")
-            self.run_py_process = subprocess.Popen(
-                [VENV_PYTHON_EXECUTABLE, SERVER_RUN_FILE],
-                cwd=SERVER_DIR,  # This ensures the process starts in the correct directory
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                bufsize=1
-            )
-            # ---------------------------------------------------
-            
-            # Read and log the output in a separate thread
-            self._log_process_output(self.run_py_process, "run.py")
-        except FileNotFoundError:
-            self.log("ERRO: O arquivo 'run.py' ou o executável do venv não foi encontrado.")
-            self.stop_servers()
-        except Exception as e:
-            self.log(f"ERRO ao iniciar o servidor Python: {e}")
-            self.stop_servers()
-
-    def _log_process_output(self, process, process_name):
-        """
-        Reads output from a subprocess and logs it to the text widget.
-        This runs in a separate thread.
-        """
-        try:
-            for line in iter(process.stdout.readline, ''):
-                self.log(f"[{process_name}]: {line.strip()}")
-            for line in iter(process.stderr.readline, ''):
-                self.log(f"[{process_name} ERROR]: {line.strip()}")
-            
-            process.stdout.close()
-            process.stderr.close()
-            process.wait()
-            self.log(f"[{process_name}]: Processo finalizado.")
-        except Exception as e:
-            self.log(f"ERRO ao ler a saída do processo {process_name}: {e}")
+        # Start frontend server
+        frontend_command = ["npx", "serve", "-s", ".", "-l", str(FRONTEND_PORT)]
+        self._start_process("frontend", frontend_command, cwd=INTERFACE_DIST_DIR)
 
     def stop_servers(self):
-        """
-        Stops all running server processes and cleans up.
-        """
         self.log("Parando servidores...")
-        
-        # Stop npx serve process
-        if self.serve_process and self.serve_process.poll() is None:
-            self.log("Parando processo 'npx serve'...")
-            self.serve_process.terminate()
-            # Wait for the process to exit
-            self.serve_process.wait()
-            self.log("'npx serve' parado.")
-        self.serve_process = None
+        for name in list(self.processes.keys()):
+            self._stop_process(name)
+        self.update_button_states(is_running=False)
 
-        # Stop run.py process
-        if self.run_py_process and self.run_py_process.poll() is None:
-            self.log("Parando processo 'run.py'...")
-            self.run_py_process.terminate()
-            # Wait for the process to exit
-            self.run_py_process.wait()
-            self.log("'run.py' parado.")
-        self.run_py_process = None
-
-        self.log("Servidores parados.")
-        
-        # Enable the start button and disable the stop button
-        self.start_button.config(state=tk.NORMAL)
-        self.stop_button.config(state=tk.DISABLED)
-        self.browser_button.config(state=tk.DISABLED)
-        
-    def log(self, message):
-        """
-        Thread-safe method to update the debug terminal.
-        """
-        # Schedule the update on the main thread using root.after
-        self.root.after(0, self._append_to_debug_text, message)
-
-    def _append_to_debug_text(self, message):
-        """
-        Appends a message to the debug terminal widget.
-        """
-        self.debug_text.config(state=tk.NORMAL)
-        self.debug_text.insert(tk.END, message + "\n")
-        self.debug_text.see(tk.END) # Auto-scroll to the end
-        self.debug_text.config(state=tk.DISABLED)
-
-    def configure_venv(self):
-        """
-        Creates a virtual environment and installs dependencies from requirements.txt.
-        This is run in a separate thread to prevent the UI from freezing.
-        """
-        self.log("Iniciando a configuração do ambiente virtual...")
-        self.config_button.config(state=tk.DISABLED)
-        
-        config_thread = threading.Thread(target=self._run_venv_setup, daemon=True)
-        config_thread.start()
-
-    def _run_venv_setup(self):
-        """
-        Helper method to execute the venv and pip commands.
-        """
+    def _start_process(self, name, command, cwd):
+        if not os.path.exists(cwd):
+            self.log(f"ERRO: Diretório de trabalho não encontrado para '{name}': {cwd}")
+            return
         try:
-            # Check if requirements.txt exists
-            if not os.path.exists(REQUIREMENTS_FILE):
-                self.log(f"ERRO: Arquivo 'requirements.txt' não encontrado em: {REQUIREMENTS_FILE}")
-                return
-            
-            self.log("Verificando se o ambiente virtual já existe...")
-            if not os.path.exists(VENV_PATH):
-                self.log("Ambiente virtual não encontrado. Criando...")
-                subprocess.run(
-                    [sys.executable, "-m", "venv", "venv"],
-                    cwd=SERVER_DIR,
-                    check=True,
-                    capture_output=True,
-                    text=True
-                )
-                self.log("Ambiente virtual criado com sucesso.")
-            else:
-                self.log("Ambiente virtual já existe.")
-                
-            self.log("Instalando dependências de 'requirements.txt'...")
-            
-            # --- Modificado para usar o executável do pip do venv ---
-            install_process = subprocess.Popen(
-                [VENV_PIP_EXECUTABLE, "install", "-r", REQUIREMENTS_FILE],
-                cwd=SERVER_DIR,
+            process = subprocess.Popen(
+                command,
+                cwd=cwd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,
-                bufsize=1
+                bufsize=1,
+                creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
             )
-            # -------------------------------------------------------
-            
-            self._log_process_output(install_process, "Instalação")
+            self.processes[name] = {"process": process, "thread": None}
 
-        except FileNotFoundError as e:
-            self.log(f"ERRO: Comando não encontrado durante a configuração: {e}")
-        except subprocess.CalledProcessError as e:
-            self.log(f"ERRO durante a criação do venv: {e.stderr}")
+            thread = threading.Thread(target=self._enqueue_output, args=(process, name), daemon=True)
+            thread.start()
+            self.processes[name]["thread"] = thread
+            self.log(f"Processo '{name}' iniciado com PID: {process.pid}")
+
+        except FileNotFoundError:
+            self.log(f"ERRO: Comando '{command[0]}' não encontrado. Verifique se está instalado e no PATH do sistema.")
+            self.stop_servers()
         except Exception as e:
-            self.log(f"Ocorreu um erro inesperado: {e}")
+            self.log(f"ERRO ao iniciar o processo '{name}': {e}")
+            self.stop_servers()
+
+    def _stop_process(self, name):
+        if name in self.processes:
+            proc_info = self.processes.pop(name)
+            process = proc_info["process"]
+            if process.poll() is None:
+                try:
+                    self.log(f"Parando processo '{name}' (PID: {process.pid})...")
+                    process.terminate()
+                    process.wait(timeout=5)
+                except subprocess.TimeoutExpired:
+                    self.log(f"Processo '{name}' não terminou, forçando o encerramento.")
+                    process.kill()
+                except Exception as e:
+                    self.log(f"Erro ao parar o processo '{name}': {e}")
+
+            self.log(f"Processo '{name}' parado.")
+
+    def _enqueue_output(self, process, name):
+        try:
+            for line in iter(process.stdout.readline, ''):
+                self.log_queue.put(f"[{name.upper()}]: {line.strip()}")
+            for line in iter(process.stderr.readline, ''):
+                self.log_queue.put(f"[{name.upper()} ERROR]: {line.strip()}")
+        except Exception as e:
+            self.log_queue.put(f"[ERROR ENQUEUE {name.upper()}]: {e}")
         finally:
-            self.log("Configuração do ambiente virtual finalizada.")
-            self.root.after(0, self.config_button.config, {'state': tk.NORMAL})
-            
-    def open_in_browser(self):
-        """
-        Opens the web interface URL in the default browser.
-        """
-        if self.serve_process and self.serve_process.poll() is None:
-            self.log(f"Abrindo {WEBSERVER_URL} no navegador...")
+             self.log_queue.put(f"[{name.upper()}]: Processo finalizado.")
+
+
+    def check_log_queue(self):
+        while not self.log_queue.empty():
             try:
-                webbrowser.open_new_tab(WEBSERVER_URL)
-            except webbrowser.Error:
-                self.log("ERRO: Não foi possível abrir o navegador. Por favor, abra o URL manualmente.")
+                message = self.log_queue.get_nowait()
+                self.log(message)
+            except queue.Empty:
+                pass
+        self.root.after(100, self.check_log_queue)
+
+    def log(self, message):
+        if self.debug_text.winfo_exists():
+            self.debug_text.config(state=tk.NORMAL)
+            self.debug_text.insert(tk.END, f"{message}\n")
+            self.debug_text.see(tk.END)
+            self.debug_text.config(state=tk.DISABLED)
+
+    def configure_venv(self):
+        self.log("Iniciando configuração do ambiente virtual...")
+        self.config_button.config(state=tk.DISABLED)
+        thread = threading.Thread(target=self._run_venv_setup, daemon=True)
+        thread.start()
+
+    def _run_venv_setup(self):
+        try:
+            if not os.path.exists(REQUIREMENTS_FILE):
+                self.log_queue.put(f"ERRO: 'requirements.txt' não encontrado em: {REQUIREMENTS_FILE}")
+                return
+
+            if not os.path.exists(VENV_PATH):
+                self.log_queue.put("Ambiente virtual não encontrado. Criando...")
+                subprocess.run([sys.executable, "-m", "venv", "venv"], cwd=SERVER_DIR, check=True, capture_output=True, text=True)
+                self.log_queue.put("Ambiente virtual criado com sucesso.")
+            else:
+                self.log_queue.put("Ambiente virtual já existe.")
+
+            self.log_queue.put("Instalando dependências de 'requirements.txt'...")
+            install_process = subprocess.Popen([VENV_PIP_EXECUTABLE, "install", "-r", REQUIREMENTS_FILE], cwd=SERVER_DIR,
+                                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
+                                               creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
+            self._enqueue_output(install_process, "pip-install")
+
+        except Exception as e:
+            self.log_queue.put(f"Ocorreu um erro inesperado durante a configuração: {e}")
+        finally:
+            self.root.after(0, lambda: self.config_button.config(state=tk.NORMAL))
+            self.log_queue.put("Configuração do ambiente finalizada.")
+
+
+    def build_frontend(self):
+        self.log("Iniciando o build do frontend... Isso pode levar alguns minutos.")
+        self.build_button.config(state=tk.DISABLED)
+        thread = threading.Thread(target=self._run_frontend_build, daemon=True)
+        thread.start()
+
+    def _run_frontend_build(self):
+        try:
+            build_process = subprocess.Popen(["npm", "install"], cwd=INTERFACE_DIR,
+                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
+                                             shell=IS_WINDOWS,
+                                             creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
+            self._enqueue_output(build_process, "npm-install")
+            build_process.wait()
+
+            build_process = subprocess.Popen(["npm", "run", "build"], cwd=INTERFACE_DIR,
+                                             stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
+                                             shell=IS_WINDOWS,
+                                             creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
+            self._enqueue_output(build_process, "npm-build")
+            build_process.wait()
+        except Exception as e:
+            self.log_queue.put(f"Ocorreu um erro inesperado durante o build: {e}")
+        finally:
+            self.root.after(0, lambda: self.build_button.config(state=tk.NORMAL))
+            self.log_queue.put("Build do frontend finalizado.")
+
+    def open_in_browser(self):
+        if "frontend" in self.processes:
+            self.log(f"Abrindo {WEBSERVER_URL} no navegador...")
+            webbrowser.open_new_tab(WEBSERVER_URL)
         else:
-            self.log("ERRO: O servidor web não está rodando. Por favor, inicie os servidores primeiro.")
-            
+            self.log("ERRO: O servidor web não está rodando.")
+
+    def update_button_states(self, is_running):
+        self.start_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
+        self.stop_button.config(state=tk.NORMAL if is_running else tk.DISABLED)
+        self.browser_button.config(state=tk.NORMAL if is_running else tk.DISABLED)
+        self.config_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
+        self.build_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
+
     def on_close(self):
-        """
-        Handler for the window close event to ensure processes are terminated.
-        """
-        self.stop_servers()
-        self.root.destroy()
+        if self.processes:
+            if messagebox.askyesno("Confirmar Saída", "Os servidores ainda estão rodando. Deseja pará-los e sair?"):
+                self.stop_servers()
+                self.root.destroy()
+        else:
+            self.root.destroy()
 
 if __name__ == "__main__":
     root = tk.Tk()

@@ -7,7 +7,12 @@
 using namespace std;
 using namespace std::chrono;
 
-const std::string SERVER_ADDRESS("tcp://YOUR_SERVER_IP_HERE:1883");
+#define MQTT_HOST ""
+#define MQTT_PORT 0
+#define MQTT_TOPIC "/"
+#define MQTT_CLIENT_ID ""
+#define MQTT_USERNAME ""
+#define MQTT_PASSWORD ""
 
 #pragma pack(push, 1) // garante alinhamento idêntico ao do firmware
 
@@ -67,7 +72,7 @@ public:
     void loop_simulacao() {
         while (true) {
             mqtt_packet_t pkt = gerar_pacote();
-            publish(nullptr, "/logging", sizeof(pkt), &pkt, 1, false);
+            publish(nullptr, MQTT_TOPIC, sizeof(pkt), &pkt, 1, false);
             cout << "[MQTT] Pacote binário enviado (" << sizeof(pkt) << " bytes)" << endl;
             this_thread::sleep_for(chrono::milliseconds(50));
         }
@@ -124,11 +129,10 @@ private:
 
 int main() {
     mosqpp::lib_init();
-    MQTTClient client("simulador_bin", "YOUR_SERVER_IP_HERE", 1883);  // <- Aqui foi alterado
-    client.username_pw_set("", "");
+    MQTTClient client(MQTT_CLIENT_ID, MQTT_HOST, MQTT_PORT);
+    client.username_pw_set(MQTT_USERNAME, MQTT_PASSWORD);
     client.loop_start();
     client.loop_simulacao();
     mosqpp::lib_cleanup();
     return 0;
 }
-
