@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     mqtt_password: str = ""
 
     # LoRa Serial Receiver Settings
-    serial_port: str = "/dev/pts/4" # Change to your actual port
+    serial_port: str = "/dev/ttyUSB0" # Change to your actual port
     serial_baudrate: int = 115200
     serial_packet_format: str = "<fBBfBHhhhhhh hhH BddI" # Always check
 
