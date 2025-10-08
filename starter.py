@@ -8,6 +8,19 @@ import webbrowser
 import queue
 import re
 
+# This new import is for detecting serial ports
+try:
+    import serial.tools.list_ports
+except ImportError:
+    messagebox.showerror(
+        "Dependency Missing",
+        "The 'pyserial' library is not installed for the starter script.\n"
+        "Please close this window and run:\n\n"
+        "pip install pyserial"
+    )
+    sys.exit(1)
+
+
 # --- Configuration Constants ---
 # Get the directory where the script is located
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
@@ -22,7 +35,6 @@ SETTINGS_FILE = os.path.join(SERVER_DIR, 'settings.py')
 VENV_PATH = os.path.join(SERVER_DIR, 'venv')
 
 # --- Webserver Configuration ---
-# The port can be found in `package.json` or `vite.config.ts`. Default for `serve` is 3000.
 FRONTEND_PORT = 3000
 WEBSERVER_URL = f"http://localhost:{FRONTEND_PORT}"
 
@@ -37,10 +49,6 @@ NPX_EXEC_NAME = 'npx.cmd' if IS_WINDOWS else 'npx'
 
 
 class ServerManagerApp:
-    """
-    A robust Tkinter application to manage the Mangue Telemetry servers.
-    Features non-blocking process handling to prevent UI freezing.
-    """
     def __init__(self, root):
         self.root = root
         self.root.title("Gerenciador de Servidores - Mangue Telemetry")
@@ -53,7 +61,7 @@ class ServerManagerApp:
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
 
         self.log("Bem-vindo ao Gerenciador de Servidores da Mangue Telemetry!")
-        self.log("Verifique se o ambiente virtual e as dependências estão configurados.")
+        self.log("Use 'Editar Settings' para configurar a fonte de dados e a porta serial.")
         self.check_log_queue()
 
     def create_widgets(self):
@@ -71,7 +79,6 @@ class ServerManagerApp:
         self.browser_button = self._create_button(button_frame, "Abrir Navegador", self.open_in_browser, "#FFC107", state=tk.DISABLED)
 
 
-        # Pack buttons with expansion
         for button in button_frame.winfo_children():
             button.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
 
@@ -105,8 +112,6 @@ class ServerManagerApp:
         self.log("Iniciando servidores...")
         self.update_button_states(is_running=True)
 
-        # --- KEY CHANGE HERE ---
-        # Launch uvicorn directly to avoid the reloader subprocess issues on Windows
         backend_command = [
             VENV_PYTHON_EXECUTABLE,
             "-m", "uvicorn",
@@ -116,7 +121,6 @@ class ServerManagerApp:
         ]
         self._start_process("backend", backend_command, cwd=SERVER_DIR)
         
-        # Start frontend server
         frontend_command = [NPX_EXEC_NAME, "serve", "-s", ".", "-l", str(FRONTEND_PORT)]
         self._start_process("frontend", frontend_command, cwd=INTERFACE_DIST_DIR)
 
@@ -130,6 +134,7 @@ class ServerManagerApp:
     def _start_process(self, name, command, cwd):
         if not os.path.exists(cwd):
             self.log(f"ERRO: Diretório de trabalho não encontrado para '{name}': {cwd}")
+            self.stop_servers()
             return
         try:
             process = subprocess.Popen(
@@ -140,7 +145,7 @@ class ServerManagerApp:
                 text=True,
                 bufsize=1,
                 creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0,
-                shell=IS_WINDOWS # Use shell=True on Windows for .cmd files
+                shell=IS_WINDOWS
             )
             self.processes[name] = {"process": process, "thread": None}
 
@@ -170,7 +175,6 @@ class ServerManagerApp:
                     process.kill()
                 except Exception as e:
                     self.log(f"Erro ao parar o processo '{name}': {e}")
-
             self.log(f"Processo '{name}' parado.")
 
     def _enqueue_output(self, process, name):
@@ -183,7 +187,6 @@ class ServerManagerApp:
             self.log_queue.put(f"[ERROR ENQUEUE {name.upper()}]: {e}")
         finally:
              self.log_queue.put(f"[{name.upper()}]: Processo finalizado.")
-
 
     def check_log_queue(self):
         while not self.log_queue.empty():
@@ -203,7 +206,7 @@ class ServerManagerApp:
 
     def configure_venv(self):
         self.log("Iniciando configuração do ambiente virtual...")
-        self.config_button.config(state=tk.DISABLED)
+        self.update_button_states(is_running=True) # Temporarily disable buttons
         thread = threading.Thread(target=self._run_venv_setup, daemon=True)
         thread.start()
 
@@ -212,7 +215,6 @@ class ServerManagerApp:
             if not os.path.exists(REQUIREMENTS_FILE):
                 self.log_queue.put(f"ERRO: 'requirements.txt' não encontrado em: {REQUIREMENTS_FILE}")
                 return
-
             if not os.path.exists(VENV_PATH):
                 self.log_queue.put("Ambiente virtual não encontrado. Criando...")
                 subprocess.run([sys.executable, "-m", "venv", "venv"], cwd=SERVER_DIR, check=True, capture_output=True, text=True)
@@ -225,30 +227,28 @@ class ServerManagerApp:
                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                                creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
             self._enqueue_output(install_process, "pip-install")
-
         except Exception as e:
             self.log_queue.put(f"Ocorreu um erro inesperado durante a configuração: {e}")
         finally:
-            self.root.after(0, lambda: self.config_button.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.update_button_states(is_running=False))
             self.log_queue.put("Configuração do ambiente finalizada.")
-
 
     def build_frontend(self):
         self.log("Iniciando o build do frontend... Isso pode levar alguns minutos.")
-        self.build_button.config(state=tk.DISABLED)
+        self.update_button_states(is_running=True)
         thread = threading.Thread(target=self._run_frontend_build, daemon=True)
         thread.start()
 
     def _run_frontend_build(self):
         try:
-            # Use shell=True for Windows to correctly resolve npm.cmd and npx.cmd
             install_process = subprocess.Popen(["npm", "install"], cwd=INTERFACE_DIR,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                              shell=IS_WINDOWS,
                                              creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
             self._enqueue_output(install_process, "npm-install")
             install_process.wait()
-
+            self.log_queue.put("Instalação das dependências do frontend finalizada.")
+            self.log_queue.put("Iniciando o build...")
             build_process = subprocess.Popen(["npm", "run", "build"], cwd=INTERFACE_DIR,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                              shell=IS_WINDOWS,
@@ -258,7 +258,7 @@ class ServerManagerApp:
         except Exception as e:
             self.log_queue.put(f"Ocorreu um erro inesperado durante o build: {e}")
         finally:
-            self.root.after(0, lambda: self.build_button.config(state=tk.NORMAL))
+            self.root.after(0, lambda: self.update_button_states(is_running=False))
             self.log_queue.put("Build do frontend finalizado.")
 
     def open_in_browser(self):
@@ -269,13 +269,13 @@ class ServerManagerApp:
             self.log("ERRO: O servidor web não está rodando.")
 
     def update_button_states(self, is_running):
+        state = tk.DISABLED if is_running else tk.NORMAL
         self.start_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
         self.stop_button.config(state=tk.NORMAL if is_running else tk.DISABLED)
         self.browser_button.config(state=tk.NORMAL if is_running else tk.DISABLED)
-        self.config_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
-        self.build_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
-        self.settings_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
-
+        self.config_button.config(state=state)
+        self.build_button.config(state=state)
+        self.settings_button.config(state=state)
 
     def on_close(self):
         if self.processes:
@@ -292,8 +292,9 @@ class SettingsWindow(Toplevel):
     def __init__(self, parent, app):
         super().__init__(parent)
         self.title("Edit Settings")
-        self.geometry("400x200")
+        self.geometry("450x200")
         self.app = app
+        self.resizable(False, False)
 
         self.data_source_var = StringVar()
         self.serial_port_var = StringVar()
@@ -302,30 +303,45 @@ class SettingsWindow(Toplevel):
         self.create_widgets()
 
     def create_widgets(self):
-        main_frame = Frame(self, padx=10, pady=10)
+        main_frame = Frame(self, padx=15, pady=15)
         main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame.columnconfigure(1, weight=1)
 
-        Label(main_frame, text="Data Source:").grid(row=0, column=0, sticky="w", pady=5)
+        Label(main_frame, text="Data Source:", font=("Helvetica", 10)).grid(row=0, column=0, sticky="w", pady=10, padx=5)
         data_source_options = ["serial", "mqtt", "simulator"]
-        OptionMenu(main_frame, self.data_source_var, *data_source_options).grid(row=0, column=1, sticky="ew")
+        ds_menu = OptionMenu(main_frame, self.data_source_var, *data_source_options)
+        ds_menu.grid(row=0, column=1, sticky="ew")
 
-        Label(main_frame, text="Serial Port:").grid(row=1, column=0, sticky="w", pady=5)
-        Entry(main_frame, textvariable=self.serial_port_var).grid(row=1, column=1, sticky="ew")
+        Label(main_frame, text="Serial Port:", font=("Helvetica", 10)).grid(row=1, column=0, sticky="w", pady=10, padx=5)
+        
+        # --- NEW: Auto-detect serial ports ---
+        ports = serial.tools.list_ports.comports()
+        port_names = [port.device for port in ports]
+        if not port_names:
+            port_names.append("No ports found")
+            if not self.serial_port_var.get():
+                 self.serial_port_var.set(port_names[0])
+        elif self.serial_port_var.get() not in port_names:
+            self.serial_port_var.set(port_names[0]) # Default to the first available port
 
-        save_button = tk.Button(main_frame, text="Save", command=self.save_settings)
-        save_button.grid(row=2, column=0, columnspan=2, pady=10)
+        port_menu = OptionMenu(main_frame, self.serial_port_var, *port_names)
+        port_menu.grid(row=1, column=1, sticky="ew")
+
+        save_button = tk.Button(main_frame, text="Save Settings", command=self.save_settings, bg="#4CAF50", fg="white", font=("Helvetica", 10, "bold"))
+        save_button.grid(row=2, column=0, columnspan=2, pady=20, sticky="ew")
+
 
     def load_current_settings(self):
         try:
             with open(SETTINGS_FILE, 'r') as f:
                 content = f.read()
-                data_source_match = re.search(r"data_source:\s*Literal\[.*]\s*=\s*\"(.*?)\"", content)
-                if data_source_match:
-                    self.data_source_var.set(data_source_match.group(1))
+            
+            ds_match = re.search(r"data_source:\s*Literal\[.*]\s*=\s*\"(.*?)\"", content)
+            if ds_match: self.data_source_var.set(ds_match.group(1))
 
-                serial_port_match = re.search(r"serial_port:\s*str\s*=\s*\"(.*?)\"", content)
-                if serial_port_match:
-                    self.serial_port_var.set(serial_port_match.group(1))
+            sp_match = re.search(r"serial_port:\s*str\s*=\s*\"(.*?)\"", content)
+            if sp_match: self.serial_port_var.set(sp_match.group(1))
+
         except Exception as e:
             self.app.log(f"Error loading settings: {e}")
             messagebox.showerror("Error", f"Could not load settings from {SETTINGS_FILE}")
@@ -338,13 +354,17 @@ class SettingsWindow(Toplevel):
             new_data_source = self.data_source_var.get()
             new_serial_port = self.serial_port_var.get()
 
+            if new_serial_port == "No ports found":
+                messagebox.showwarning("Warning", "No serial port selected. Please connect a device.")
+                return
+
             content = re.sub(r"(data_source:\s*Literal\[.*]\s*=\s*\").*?(\")", f"\\1{new_data_source}\\2", content)
             content = re.sub(r"(serial_port:\s*str\s*=\s*\").*?(\")", f"\\1{new_serial_port}\\2", content)
 
             with open(SETTINGS_FILE, 'w') as f:
                 f.write(content)
 
-            self.app.log("Settings saved successfully.")
+            self.app.log(f"Settings saved: Source='{new_data_source}', Port='{new_serial_port}'")
             self.destroy()
 
         except Exception as e:
