@@ -1,8 +1,3 @@
-"""
-    There was a very heavy use of AI in this specific code (starter.py) so it is 
-    not fully trustworthy.
-"""
-
 import tkinter as tk
 from tkinter import scrolledtext, messagebox, Toplevel, StringVar, OptionMenu, Entry, Frame, Label
 import subprocess
@@ -13,8 +8,11 @@ import webbrowser
 import queue
 import re
 
+# --- Configuration Constants ---
+# Get the directory where the script is located
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+# --- Project Structure Paths ---
 INTERFACE_DIR = os.path.join(SCRIPT_DIR, 'interface')
 INTERFACE_DIST_DIR = os.path.join(INTERFACE_DIR, 'dist')
 SERVER_DIR = os.path.join(SCRIPT_DIR, 'server')
@@ -23,9 +21,12 @@ REQUIREMENTS_FILE = os.path.join(SERVER_DIR, 'requirements.txt')
 SETTINGS_FILE = os.path.join(SERVER_DIR, 'settings.py')
 VENV_PATH = os.path.join(SERVER_DIR, 'venv')
 
+# --- Webserver Configuration ---
+# The port can be found in `package.json` or `vite.config.ts`. Default for `serve` is 3000.
 FRONTEND_PORT = 3000
 WEBSERVER_URL = f"http://localhost:{FRONTEND_PORT}"
 
+# --- Platform-Specific Executable Names ---
 IS_WINDOWS = sys.platform == 'win32'
 PYTHON_EXEC_NAME = 'python.exe' if IS_WINDOWS else 'python'
 PIP_EXEC_NAME = 'pip.exe' if IS_WINDOWS else 'pip'
@@ -105,8 +106,14 @@ class ServerManagerApp:
         self.update_button_states(is_running=True)
 
         # --- KEY CHANGE HERE ---
-        # Start backend with the -u flag for unbuffered output
-        backend_command = [VENV_PYTHON_EXECUTABLE, "-u", SERVER_RUN_FILE]
+        # Launch uvicorn directly to avoid the reloader subprocess issues on Windows
+        backend_command = [
+            VENV_PYTHON_EXECUTABLE,
+            "-m", "uvicorn",
+            "main:app",
+            "--host", "0.0.0.0",
+            "--port", "8000"
+        ]
         self._start_process("backend", backend_command, cwd=SERVER_DIR)
         
         # Start frontend server

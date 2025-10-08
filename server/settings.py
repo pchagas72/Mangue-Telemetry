@@ -3,8 +3,8 @@ from typing import Literal
 
 class Settings(BaseSettings):
     # Server serttings
-    # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "serial"
-    data_source: Literal["serial", "mqtt", "simulator"] = "serial"
+    # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
+    data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
     broadcast_delay_seconds: float = 0.1
 
     # MQTT Broker Settings
