@@ -1,20 +1,21 @@
 """
 Arquivo contendo o simulador de telemetria em Python.
+A lógica de simulação foi atualizada para espelhar o simulador C++,
+mantendo a saída no formato de dicionário para compatibilidade com a API.
 """
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime
 import math
-import random
+import time
 from typing import Dict, Any
 
 class Simulador:
     """
     Classe que simula dados de telemetria para testes da interface.
 
-    Esta classe gera dados de telemetria semi-aleatórios em uma
-    tarefa de fundo e os disponibiliza através de uma fila assíncrona,
-    imitando o comportamento de um serviço de telemetria real.
+    Esta classe gera dados de telemetria usando a mesma lógica do emulador C++,
+    mas os disponibiliza como um dicionário Python, compatível com a aplicação FastAPI.
     """
 
     def __init__(self, update_rate_hz: int = 20):
@@ -25,11 +26,8 @@ class Simulador:
             update_rate_hz (int): A frequência de atualização de
                                   dados em Hertz.
         """
-        self.inicio = datetime.now()
-        self.vel_anterior = 0.0
-        self.timestamp_atual = datetime.now()
-        self.base_lat = -8.05428
-        self.base_lon = -34.8813
+        # O contador é usado para a lógica de simulação, assim como no C++
+        self.counter = 0
         self.update_interval_seconds = 1.0 / update_rate_hz
         self.queue = asyncio.Queue(maxsize=1)
         self._task = None
@@ -51,7 +49,7 @@ class Simulador:
 
     async def get_payload(self) -> Dict[str, Any]:
         """
-        Retorna o último pacote de dados de telemetria gerado.
+        Retorna o último pacote de dados de telemetria gerado pela tarefa de fundo.
         Aguarda se nenhum dado novo estiver disponível.
         """
         return await self.queue.get()
@@ -73,51 +71,70 @@ class Simulador:
 
     def _gerar_pacote_de_dados(self) -> Dict[str, Any]:
         """
-        Gera um único pacote de dados de telemetria semi-aleatórios.
+        Gera um único pacote de dados de telemetria usando a lógica do C++.
 
         Returns:
             Um dicionário contendo os dados de telemetria simulados.
         """
-        tempo_s = (datetime.now() - self.inicio).total_seconds()
-        self.timestamp_atual += timedelta(
-            seconds=self.update_interval_seconds
-        )
+        c = self.counter  # Usando 'c' para ser mais parecido com o C++
 
-        # Simulação de dados com base em funções senoidais e aleatoriedade
-        vel = max(0, min(60, 30 + 15 * math.sin(tempo_s / 10)))
-        rpm = vel * 120 + random.uniform(-200, 200)
-        accx = (vel - self.vel_anterior) / self.update_interval_seconds
+        # --- Lógica de geração de dados portada do `populate_packet` em C++ ---
+        # Os valores são arredondados para manter o formato do simulador original
+        
+        # O C++ armazena valores como inteiros escalados (ex: acc_x como int16_t).
+        # Aqui, vamos manter como floats, mas usando a mesma função base.
+        # Ex: int16_t(sin(c * 0.5) * 100) -> round(sin(c * 0.5), 2)
+        accx = round(math.sin(c * 0.5), 2)
+        accy = round(math.cos(c * 0.5), 2)
+        # 980 em C++ é 9.8 m/s^2. Dividimos por 100 para normalizar.
+        accz = round(9.8 + math.sin(c * 0.2) * 0.1, 2)
+        
+        # DPS (Degrees Per Second)
+        dpsx = round(math.cos(c * 0.4) * 5, 2) # Reduzido para valores mais sutis
+        dpsy = round(math.sin(c * 0.4) * 5, 2)
+        dpsz = round(math.cos(c * 0.1), 2)
 
         dados = {
-            "accx": round(accx, 2),
-            "accy": round(random.uniform(-0.2, 0.2), 2),
-            "accz": round(random.uniform(9.4, 9.8), 2),
-            "dpsx": round(random.uniform(-1, 1), 2),
-            "dpsy": round(random.uniform(-1, 1), 2),
-            "dpsz": round(random.uniform(-1, 1), 2),
-            "roll": round(random.uniform(-5, 5), 2),
-            "pitch": round(random.uniform(-5, 5), 2),
-            "rpm": round(rpm, 2),
-            "speed": round(vel, 2),
-            "temperature": round(min(110, 60 + tempo_s * 0.3), 1),
-            "soc": round(max(0, 100 - tempo_s * 0.03), 1),
-            "temp_cvt": round(min(95, 50 + tempo_s * 0.25), 1),
-            "volt": round(13.0 - tempo_s * 0.001, 2),
-            "current": round(random.uniform(150, 300), 1),
-            "flags": 0,
-            "latitude": round(self.base_lat + tempo_s * 0.00002, 6),
-            "longitude": round(
-                self.base_lon + math.sin(tempo_s / 20) * 0.0001, 6
-            ),
-            "timestamp": self.timestamp_atual.isoformat(),
+            "accx": accx,
+            "accy": accy,
+            "accz": accz,
+            "dpsx": dpsx,
+            "dpsy": dpsy,
+            "dpsz": dpsz,
+            "roll": round(math.sin(c * 0.1) * 20, 2),
+            "pitch": round(math.cos(c * 0.1) * 10, 2),
+            "rpm": round(3000 + math.sin(c * 0.8) * 500, 2),
+            "speed": round((c * 2) % 60, 2),
+            "temperature": round(75 + math.cos(c * 0.3) * 3, 1),
+            "soc": round(98 - (c % 20), 1),
+            "temp_cvt": round(80 + math.sin(c * 0.2) * 5, 1), # Mapeado de 'cvt'
+            "volt": round(12.5 + math.sin(c * 0.1) * 0.5, 2),
+            "current": round(15.3 + math.cos(c * 0.1) * 2.0, 1),
+            "flags": c % 2,
+            "latitude": round(-8.05428 + math.sin(c * 0.01) * 0.001, 6),
+            "longitude": round(-34.8813 + math.cos(c * 0.01) * 0.001, 6),
+            "timestamp": datetime.now().isoformat(),
         }
 
-        self.vel_anterior = vel
+        self.counter += 1
         return dados
 
     async def gerar_dados(self) -> Dict[str, Any]:
         """
-        Gera um único pacote de dados.
-        Recomendado usar `get_payload` com `start` e `stop`.
+        Gera e retorna um único pacote de dados.
+        Este é o método chamado pelo `main.py`. Ele precisa ser `async`.
         """
         return self._gerar_pacote_de_dados()
+
+# --- Bloco de Teste ---
+async def main():
+    """Função para testar e visualizar a saída do simulador."""
+    sim = Simulador()
+    dados_simulados = await sim.gerar_dados()
+    
+    import json
+    print("Saída do simulador no formato JSON (dicionário):")
+    print(json.dumps(dados_simulados, indent=2))
+
+if __name__ == "__main__":
+    asyncio.run(main())

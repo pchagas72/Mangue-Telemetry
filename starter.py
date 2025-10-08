@@ -1,37 +1,39 @@
+"""
+    There was a very heavy use of AI in this specific code (starter.py) so it is 
+    not fully trustworthy.
+"""
+
 import tkinter as tk
-from tkinter import scrolledtext, messagebox
+from tkinter import scrolledtext, messagebox, Toplevel, StringVar, OptionMenu, Entry, Frame, Label
 import subprocess
 import threading
 import os
 import sys
 import webbrowser
 import queue
-import time
+import re
 
-# --- Configuration Constants ---
-# Get the directory where the script is located
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-# --- Project Structure Paths ---
 INTERFACE_DIR = os.path.join(SCRIPT_DIR, 'interface')
 INTERFACE_DIST_DIR = os.path.join(INTERFACE_DIR, 'dist')
 SERVER_DIR = os.path.join(SCRIPT_DIR, 'server')
 SERVER_RUN_FILE = os.path.join(SERVER_DIR, 'run.py')
 REQUIREMENTS_FILE = os.path.join(SERVER_DIR, 'requirements.txt')
+SETTINGS_FILE = os.path.join(SERVER_DIR, 'settings.py')
 VENV_PATH = os.path.join(SERVER_DIR, 'venv')
 
-# --- Webserver Configuration ---
-# The port can be found in `package.json` or `vite.config.ts`. Default for `serve` is 3000.
 FRONTEND_PORT = 3000
 WEBSERVER_URL = f"http://localhost:{FRONTEND_PORT}"
 
-# --- Platform-Specific Executable Names ---
 IS_WINDOWS = sys.platform == 'win32'
 PYTHON_EXEC_NAME = 'python.exe' if IS_WINDOWS else 'python'
 PIP_EXEC_NAME = 'pip.exe' if IS_WINDOWS else 'pip'
 VENV_BIN_DIR = 'Scripts' if IS_WINDOWS else 'bin'
 VENV_PYTHON_EXECUTABLE = os.path.join(VENV_PATH, VENV_BIN_DIR, PYTHON_EXEC_NAME)
 VENV_PIP_EXECUTABLE = os.path.join(VENV_PATH, VENV_BIN_DIR, PIP_EXEC_NAME)
+NPX_EXEC_NAME = 'npx.cmd' if IS_WINDOWS else 'npx'
+
 
 class ServerManagerApp:
     """
@@ -64,7 +66,9 @@ class ServerManagerApp:
         self.stop_button = self._create_button(button_frame, "Parar Servidores", self.stop_servers, "#F44336", state=tk.DISABLED)
         self.config_button = self._create_button(button_frame, "Configurar Ambiente", self.configure_venv, "#2196F3")
         self.build_button = self._create_button(button_frame, "Build Frontend", self.build_frontend, "#FF9800")
+        self.settings_button = self._create_button(button_frame, "Editar Settings", self.open_settings_window, "#673AB7")
         self.browser_button = self._create_button(button_frame, "Abrir Navegador", self.open_in_browser, "#FFC107", state=tk.DISABLED)
+
 
         # Pack buttons with expansion
         for button in button_frame.winfo_children():
@@ -106,8 +110,9 @@ class ServerManagerApp:
         self._start_process("backend", backend_command, cwd=SERVER_DIR)
         
         # Start frontend server
-        frontend_command = ["npx", "serve", "-s", ".", "-l", str(FRONTEND_PORT)]
+        frontend_command = [NPX_EXEC_NAME, "serve", "-s", ".", "-l", str(FRONTEND_PORT)]
         self._start_process("frontend", frontend_command, cwd=INTERFACE_DIST_DIR)
+
 
     def stop_servers(self):
         self.log("Parando servidores...")
@@ -127,7 +132,8 @@ class ServerManagerApp:
                 stderr=subprocess.PIPE,
                 text=True,
                 bufsize=1,
-                creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0
+                creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0,
+                shell=IS_WINDOWS # Use shell=True on Windows for .cmd files
             )
             self.processes[name] = {"process": process, "thread": None}
 
@@ -228,12 +234,13 @@ class ServerManagerApp:
 
     def _run_frontend_build(self):
         try:
-            build_process = subprocess.Popen(["npm", "install"], cwd=INTERFACE_DIR,
+            # Use shell=True for Windows to correctly resolve npm.cmd and npx.cmd
+            install_process = subprocess.Popen(["npm", "install"], cwd=INTERFACE_DIR,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                              shell=IS_WINDOWS,
                                              creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
-            self._enqueue_output(build_process, "npm-install")
-            build_process.wait()
+            self._enqueue_output(install_process, "npm-install")
+            install_process.wait()
 
             build_process = subprocess.Popen(["npm", "run", "build"], cwd=INTERFACE_DIR,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
@@ -260,6 +267,8 @@ class ServerManagerApp:
         self.browser_button.config(state=tk.NORMAL if is_running else tk.DISABLED)
         self.config_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
         self.build_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
+        self.settings_button.config(state=tk.DISABLED if is_running else tk.NORMAL)
+
 
     def on_close(self):
         if self.processes:
@@ -268,6 +277,73 @@ class ServerManagerApp:
                 self.root.destroy()
         else:
             self.root.destroy()
+            
+    def open_settings_window(self):
+        SettingsWindow(self.root, self)
+
+class SettingsWindow(Toplevel):
+    def __init__(self, parent, app):
+        super().__init__(parent)
+        self.title("Edit Settings")
+        self.geometry("400x200")
+        self.app = app
+
+        self.data_source_var = StringVar()
+        self.serial_port_var = StringVar()
+
+        self.load_current_settings()
+        self.create_widgets()
+
+    def create_widgets(self):
+        main_frame = Frame(self, padx=10, pady=10)
+        main_frame.pack(fill=tk.BOTH, expand=True)
+
+        Label(main_frame, text="Data Source:").grid(row=0, column=0, sticky="w", pady=5)
+        data_source_options = ["serial", "mqtt", "simulator"]
+        OptionMenu(main_frame, self.data_source_var, *data_source_options).grid(row=0, column=1, sticky="ew")
+
+        Label(main_frame, text="Serial Port:").grid(row=1, column=0, sticky="w", pady=5)
+        Entry(main_frame, textvariable=self.serial_port_var).grid(row=1, column=1, sticky="ew")
+
+        save_button = tk.Button(main_frame, text="Save", command=self.save_settings)
+        save_button.grid(row=2, column=0, columnspan=2, pady=10)
+
+    def load_current_settings(self):
+        try:
+            with open(SETTINGS_FILE, 'r') as f:
+                content = f.read()
+                data_source_match = re.search(r"data_source:\s*Literal\[.*]\s*=\s*\"(.*?)\"", content)
+                if data_source_match:
+                    self.data_source_var.set(data_source_match.group(1))
+
+                serial_port_match = re.search(r"serial_port:\s*str\s*=\s*\"(.*?)\"", content)
+                if serial_port_match:
+                    self.serial_port_var.set(serial_port_match.group(1))
+        except Exception as e:
+            self.app.log(f"Error loading settings: {e}")
+            messagebox.showerror("Error", f"Could not load settings from {SETTINGS_FILE}")
+
+    def save_settings(self):
+        try:
+            with open(SETTINGS_FILE, 'r') as f:
+                content = f.read()
+
+            new_data_source = self.data_source_var.get()
+            new_serial_port = self.serial_port_var.get()
+
+            content = re.sub(r"(data_source:\s*Literal\[.*]\s*=\s*\").*?(\")", f"\\1{new_data_source}\\2", content)
+            content = re.sub(r"(serial_port:\s*str\s*=\s*\").*?(\")", f"\\1{new_serial_port}\\2", content)
+
+            with open(SETTINGS_FILE, 'w') as f:
+                f.write(content)
+
+            self.app.log("Settings saved successfully.")
+            self.destroy()
+
+        except Exception as e:
+            self.app.log(f"Error saving settings: {e}")
+            messagebox.showerror("Error", f"Could not save settings to {SETTINGS_FILE}")
+
 
 if __name__ == "__main__":
     root = tk.Tk()
