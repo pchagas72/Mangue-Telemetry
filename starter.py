@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import scrolledtext, messagebox, Toplevel, StringVar, OptionMenu, Entry, Frame, Label
+from tkinter import scrolledtext, messagebox, Toplevel, StringVar, OptionMenu, Frame, Label
 import subprocess
 import threading
 import os
@@ -8,7 +8,6 @@ import webbrowser
 import queue
 import re
 
-# This new import is for detecting serial ports
 try:
     import serial.tools.list_ports
 except ImportError:
@@ -21,8 +20,6 @@ except ImportError:
     sys.exit(1)
 
 
-# --- Configuration Constants ---
-# Get the directory where the script is located
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 
 # --- Project Structure Paths ---
@@ -47,12 +44,21 @@ VENV_PYTHON_EXECUTABLE = os.path.join(VENV_PATH, VENV_BIN_DIR, PYTHON_EXEC_NAME)
 VENV_PIP_EXECUTABLE = os.path.join(VENV_PATH, VENV_BIN_DIR, PIP_EXEC_NAME)
 NPX_EXEC_NAME = 'npx.cmd' if IS_WINDOWS else 'npx'
 
+# --- NEW: Configuration/Styling Constants for a "Cool" Look ---
+DARK_BG = "#1e1e1e"
+PANEL_BG = "#2c2c2c"
+TEXT_COLOR = "#f0f0f0"
+PRIMARY_COLOR = "#4a90e2"  # Blue for open dashboard
+SUCCESS_COLOR = "#4CAF50"  # Green for Start
+DANGER_COLOR = "#e53935"   # Red for Stop
+ACTION_COLOR = "#FF9800"   # Orange/Amber for System Log Title
 
 class ServerManagerApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("Gerenciador de Servidores - Mangue Telemetry")
+        self.root.title("Mangue Telemetry: Control Hub")
         self.root.geometry("850x650")
+        self.root.configure(bg=DARK_BG)
 
         self.processes = {}
         self.log_queue = queue.Queue()
@@ -65,38 +71,57 @@ class ServerManagerApp:
         self.check_log_queue()
 
     def create_widgets(self):
-        main_frame = tk.Frame(self.root, padx=15, pady=15, bg="#f0f0f0")
+        # --- Main Frame ---
+        main_frame = tk.Frame(self.root, padx=20, pady=20, bg=DARK_BG)
         main_frame.pack(fill=tk.BOTH, expand=True)
 
-        button_frame = tk.Frame(main_frame, bg="#f0f0f0")
-        button_frame.pack(pady=10, fill=tk.X)
+        # --- Title ---
+        title_label = tk.Label(main_frame, text="MANGUE TELEMETRY CONTROL HUB", 
+                                font=("Helvetica", 18, "bold"), 
+                                fg=SUCCESS_COLOR, bg=DARK_BG, pady=10)
+        title_label.pack(fill=tk.X)
 
-        self.start_button = self._create_button(button_frame, "Iniciar Servidores", self.start_servers, "#4CAF50")
-        self.stop_button = self._create_button(button_frame, "Parar Servidores", self.stop_servers, "#F44336", state=tk.DISABLED)
-        self.config_button = self._create_button(button_frame, "Configurar Ambiente", self.configure_venv, "#2196F3")
-        self.build_button = self._create_button(button_frame, "Build Frontend", self.build_frontend, "#FF9800")
-        self.settings_button = self._create_button(button_frame, "Editar Settings", self.open_settings_window, "#673AB7")
-        self.browser_button = self._create_button(button_frame, "Abrir Navegador", self.open_in_browser, "#FFC107", state=tk.DISABLED)
+        # --- Action Buttons Frame (Start/Stop/Browser) ---
+        action_frame = tk.Frame(main_frame, bg=PANEL_BG, padx=15, pady=15, bd=0, relief=tk.FLAT)
+        action_frame.pack(pady=15, fill=tk.X)
+        
+        self.start_button = self._create_button(action_frame, "▶ START SERVERS", self.start_servers, SUCCESS_COLOR)
+        self.stop_button = self._create_button(action_frame, "■ STOP SERVERS", self.stop_servers, DANGER_COLOR, state=tk.DISABLED)
+        self.browser_button = self._create_button(action_frame, "🌐 OPEN DASHBOARD", self.open_in_browser, PRIMARY_COLOR, state=tk.DISABLED)
 
+        self.start_button.pack(side=tk.LEFT, padx=10, expand=True, fill=tk.X)
+        self.stop_button.pack(side=tk.LEFT, padx=10, expand=True, fill=tk.X)
+        self.browser_button.pack(side=tk.LEFT, padx=10, expand=True, fill=tk.X)
 
-        for button in button_frame.winfo_children():
+        # --- Utility Buttons Frame (Config/Build/Settings) ---
+        utility_frame = tk.Frame(main_frame, bg=DARK_BG)
+        utility_frame.pack(pady=(5, 20), fill=tk.X)
+
+        self.config_button = self._create_button(utility_frame, "   CONFIGURE VENV", self.configure_venv, PANEL_BG, fg=TEXT_COLOR, active_bg=PRIMARY_COLOR)
+        self.build_button = self._create_button(utility_frame, "📦 BUILD FRONTEND", self.build_frontend, PANEL_BG, fg=TEXT_COLOR, active_bg=PRIMARY_COLOR)
+        self.settings_button = self._create_button(utility_frame, "🔧 EDIT SETTINGS", self.open_settings_window, PANEL_BG, fg=TEXT_COLOR, active_bg=PRIMARY_COLOR)
+        
+        for button in utility_frame.winfo_children():
             button.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
 
-        debug_label = tk.Label(main_frame, text="Terminal de Depuração:", font=("Helvetica", 12, "bold"), bg="#f0f0f0", anchor="w")
+        # --- Debug/Log Section ---
+        debug_label = tk.Label(main_frame, text="[ SYSTEM LOG / DEBUG TERMINAL ]", 
+                                font=("Courier", 12, "bold"), 
+                                fg=ACTION_COLOR, bg=DARK_BG, anchor="w", pady=5)
         debug_label.pack(fill=tk.X, pady=(10, 5))
 
         self.debug_text = scrolledtext.ScrolledText(
             main_frame, wrap=tk.WORD, state=tk.DISABLED,
-            font=("Courier New", 10), bg="#2c3e50", fg="#ecf0f1",
-            insertbackground="#ecf0f1", relief=tk.FLAT
+            font=("Courier New", 10), bg="#111111", fg="#00FF00", # Classic hacker terminal look
+            insertbackground="#00FF00", relief=tk.FLAT, bd=0
         )
         self.debug_text.pack(fill=tk.BOTH, expand=True)
 
-    def _create_button(self, parent, text, command, bg_color, state=tk.NORMAL):
+    def _create_button(self, parent, text, command, bg_color, state=tk.NORMAL, fg="white", active_bg=None):
         return tk.Button(
-            parent, text=text, command=command, font=("Helvetica", 12, "bold"),
-            bg=bg_color, fg="white", activebackground=bg_color,
-            bd=0, relief=tk.FLAT, padx=15, pady=8, cursor="hand2", state=state
+            parent, text=text, command=command, font=("Helvetica", 11, "bold"),
+            bg=bg_color, fg=fg, activebackground=active_bg or bg_color,
+            bd=0, relief=tk.FLAT, padx=15, pady=10, cursor="hand2", state=state
         )
 
     def start_servers(self):
@@ -145,7 +170,7 @@ class ServerManagerApp:
                 text=True,
                 bufsize=1,
                 creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0,
-                shell=IS_WINDOWS
+                shell=IS_WINDOWS # Use shell=True on Windows for npx/npm to be found reliably
             )
             self.processes[name] = {"process": process, "thread": None}
 
@@ -200,9 +225,23 @@ class ServerManagerApp:
     def log(self, message):
         if self.debug_text.winfo_exists():
             self.debug_text.config(state=tk.NORMAL)
-            self.debug_text.insert(tk.END, f"{message}\n")
+            
+            # Simple color coding for better readability in the log
+            if "ERRO:" in message or "ERROR" in message or "Fail" in message:
+                self.debug_text.insert(tk.END, f"{message}\n", 'error')
+                self.debug_text.tag_config('error', foreground=DANGER_COLOR)
+            elif "SUCCESS" in message or "iniciado com PID" in message or "finalizada" in message or "conectado" in message:
+                self.debug_text.insert(tk.END, f"{message}\n", 'success')
+                self.debug_text.tag_config('success', foreground=SUCCESS_COLOR)
+            elif "[SYSTEM LOG" in message:
+                 self.debug_text.insert(tk.END, f"{message}\n", 'title')
+                 self.debug_text.tag_config('title', foreground=ACTION_COLOR)
+            else:
+                self.debug_text.insert(tk.END, f"{message}\n")
+
             self.debug_text.see(tk.END)
             self.debug_text.config(state=tk.DISABLED)
+
 
     def configure_venv(self):
         self.log("Iniciando configuração do ambiente virtual...")
@@ -227,11 +266,17 @@ class ServerManagerApp:
                                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                                creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
             self._enqueue_output(install_process, "pip-install")
+            install_process.wait()
+            if install_process.returncode == 0:
+                 self.log_queue.put("SUCCESS: Instalação de dependências do backend finalizada com sucesso.")
+            else:
+                 self.log_queue.put("ERROR: Instalação de dependências do backend falhou.")
+
         except Exception as e:
             self.log_queue.put(f"Ocorreu um erro inesperado durante a configuração: {e}")
         finally:
             self.root.after(0, lambda: self.update_button_states(is_running=False))
-            self.log_queue.put("Configuração do ambiente finalizada.")
+            self.log_queue.put("[SYSTEM LOG / DEBUG TERMINAL]")
 
     def build_frontend(self):
         self.log("Iniciando o build do frontend... Isso pode levar alguns minutos.")
@@ -241,25 +286,37 @@ class ServerManagerApp:
 
     def _run_frontend_build(self):
         try:
+            self.log_queue.put("[NPM] Instalando dependências do frontend...")
             install_process = subprocess.Popen(["npm", "install"], cwd=INTERFACE_DIR,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                              shell=IS_WINDOWS,
                                              creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
             self._enqueue_output(install_process, "npm-install")
             install_process.wait()
-            self.log_queue.put("Instalação das dependências do frontend finalizada.")
-            self.log_queue.put("Iniciando o build...")
+            
+            if install_process.returncode != 0:
+                 self.log_queue.put("ERROR: Instalação das dependências do frontend falhou.")
+                 return
+
+            self.log_queue.put("Instalação das dependências do frontend concluída. Iniciando o build...")
+            
             build_process = subprocess.Popen(["npm", "run", "build"], cwd=INTERFACE_DIR,
                                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1,
                                              shell=IS_WINDOWS,
                                              creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
             self._enqueue_output(build_process, "npm-build")
             build_process.wait()
+
+            if build_process.returncode == 0:
+                 self.log_queue.put("SUCCESS: Build do frontend finalizado com sucesso. Pronto para iniciar!")
+            else:
+                 self.log_queue.put("ERROR: Build do frontend falhou.")
+
         except Exception as e:
             self.log_queue.put(f"Ocorreu um erro inesperado durante o build: {e}")
         finally:
             self.root.after(0, lambda: self.update_button_states(is_running=False))
-            self.log_queue.put("Build do frontend finalizado.")
+            self.log_queue.put("[SYSTEM LOG / DEBUG TERMINAL]")
 
     def open_in_browser(self):
         if "frontend" in self.processes:
@@ -286,49 +343,62 @@ class ServerManagerApp:
             self.root.destroy()
             
     def open_settings_window(self):
-        SettingsWindow(self.root, self)
+        SettingsWindow(self.root, self, DARK_BG, PANEL_BG, TEXT_COLOR, SUCCESS_COLOR)
 
 class SettingsWindow(Toplevel):
-    def __init__(self, parent, app):
+    def __init__(self, parent, app, bg_color, panel_bg, text_color, button_color):
         super().__init__(parent)
-        self.title("Edit Settings")
-        self.geometry("450x200")
+        self.title("Configuration Settings")
+        self.geometry("450x250") 
         self.app = app
         self.resizable(False, False)
+        self.configure(bg=bg_color)
 
         self.data_source_var = StringVar()
         self.serial_port_var = StringVar()
+        self.text_color = text_color
+        self.panel_bg = panel_bg
+        self.button_color = button_color
 
         self.load_current_settings()
         self.create_widgets()
 
     def create_widgets(self):
-        main_frame = Frame(self, padx=15, pady=15)
-        main_frame.pack(fill=tk.BOTH, expand=True)
+        main_frame = Frame(self, padx=20, pady=20, bg=self.panel_bg)
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         main_frame.columnconfigure(1, weight=1)
 
-        Label(main_frame, text="Data Source:", font=("Helvetica", 10)).grid(row=0, column=0, sticky="w", pady=10, padx=5)
+        Label(main_frame, text="DATA SOURCE:", font=("Helvetica", 10, "bold"), 
+              bg=self.panel_bg, fg=self.text_color).grid(row=0, column=0, sticky="w", pady=10, padx=5)
+        
         data_source_options = ["serial", "mqtt", "simulator"]
         ds_menu = OptionMenu(main_frame, self.data_source_var, *data_source_options)
+        ds_menu.config(bg=self.button_color, fg="white", activebackground=self.button_color, relief=tk.FLAT)
+        ds_menu["menu"].config(bg=self.panel_bg, fg=self.text_color)
         ds_menu.grid(row=0, column=1, sticky="ew")
 
-        Label(main_frame, text="Serial Port:", font=("Helvetica", 10)).grid(row=1, column=0, sticky="w", pady=10, padx=5)
+        Label(main_frame, text="SERIAL PORT:", font=("Helvetica", 10, "bold"), 
+              bg=self.panel_bg, fg=self.text_color).grid(row=1, column=0, sticky="w", pady=10, padx=5)
         
         # --- NEW: Auto-detect serial ports ---
         ports = serial.tools.list_ports.comports()
         port_names = [port.device for port in ports]
         if not port_names:
             port_names.append("No ports found")
-            if not self.serial_port_var.get():
-                 self.serial_port_var.set(port_names[0])
+            if not self.serial_port_var.get() or self.serial_port_var.get() == "":
+                 self.serial_port_var.set("No ports found")
         elif self.serial_port_var.get() not in port_names:
             self.serial_port_var.set(port_names[0]) # Default to the first available port
 
         port_menu = OptionMenu(main_frame, self.serial_port_var, *port_names)
+        port_menu.config(bg=self.button_color, fg="white", activebackground=self.button_color, relief=tk.FLAT)
+        port_menu["menu"].config(bg=self.panel_bg, fg=self.text_color)
         port_menu.grid(row=1, column=1, sticky="ew")
 
-        save_button = tk.Button(main_frame, text="Save Settings", command=self.save_settings, bg="#4CAF50", fg="white", font=("Helvetica", 10, "bold"))
-        save_button.grid(row=2, column=0, columnspan=2, pady=20, sticky="ew")
+        save_button = tk.Button(main_frame, text="✅ SAVE & APPLY", command=self.save_settings, 
+                                bg=self.button_color, fg="white", 
+                                font=("Helvetica", 11, "bold"), bd=0, relief=tk.FLAT, pady=10)
+        save_button.grid(row=2, column=0, columnspan=2, pady=30, sticky="ew")
 
 
     def load_current_settings(self):
@@ -355,7 +425,7 @@ class SettingsWindow(Toplevel):
             new_serial_port = self.serial_port_var.get()
 
             if new_serial_port == "No ports found":
-                messagebox.showwarning("Warning", "No serial port selected. Please connect a device.")
+                messagebox.showwarning("Warning", "No serial port selected. Please connect a device or select 'simulator'.")
                 return
 
             content = re.sub(r"(data_source:\s*Literal\[.*]\s*=\s*\").*?(\")", f"\\1{new_data_source}\\2", content)
@@ -364,15 +434,24 @@ class SettingsWindow(Toplevel):
             with open(SETTINGS_FILE, 'w') as f:
                 f.write(content)
 
-            self.app.log(f"Settings saved: Source='{new_data_source}', Port='{new_serial_port}'")
+            self.app.log(f"SUCCESS: Settings saved: Source='{new_data_source}', Port='{new_serial_port}'")
             self.destroy()
 
         except Exception as e:
             self.app.log(f"Error saving settings: {e}")
             messagebox.showerror("Error", f"Could not save settings to {SETTINGS_FILE}")
 
-
 if __name__ == "__main__":
+    # --- ADD THIS SECTION ---
+    # This environment variable forces Tcl/Tk to use the native Wayland
+    # backend via D-Bus instead of XWayland, which often fixes freezes.
+    if os.environ.get('WAYLAND_DISPLAY'):
+        os.environ['TK_XIM_CLIENT'] = '1'
+        os.environ['TK_XIM_SERVER'] = '1'
+        # On some systems, setting the WM to D-Bus/Wayland is sufficient
+        # On others, these two are necessary for stability
+    # ------------------------
+    
     root = tk.Tk()
     app = ServerManagerApp(root)
     root.mainloop()
