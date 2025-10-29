@@ -322,23 +322,35 @@ body {
     background-color: #ffa726;
 }
 
-/* GRAPHS LAYOUT */
+/* GRAPHS LAYOUT - AJUSTADO PARA O NOVO LAYOUT DA IMAGEM */
 .graficos_dashboard {
     display: flex;
     gap: 20px;
 }
 
+/* left_panel agora contém TODOS os gráficos (Velocidade, RPM, Temps, Accel X, Y, Z) */
 .left_panel {
     display: flex;
     flex-direction: column;
-    width: 70%;
+    width: 70%; /* Ocupa a maior parte da tela para os gráficos */
     gap: 20px;
 }
 
+/* Contêiner para os 3 gráficos de aceleração lado a lado */
+.acceleration_charts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr); /* 3 colunas de largura igual */
+    gap: 20px;
+    /* Ajusta a altura mínima para que eles fiquem pequenos, como na imagem */
+    min-height: 250px; 
+}
+
+/* Removido o .middle_panel, pois ele não é mais necessário */
+/* O right_panel agora tem o Mapa, CarModel, Bateria e Status/Log */
 .right_panel {
     display: flex;
     flex-direction: column;
-    width: 30%;
+    width: 30%; /* Ocupa o restante da tela para Mapa e Status */
     gap: 20px;
 }
 
@@ -391,6 +403,10 @@ body {
     .left_panel,
     .right_panel {
         width: 100%;
+    }
+    
+    .acceleration_charts {
+        grid-template-columns: 1fr; /* Volta para 1 coluna no celular */
     }
 
     .car-model-container {

@@ -26,11 +26,16 @@ export default function Dashboard() {
     const [rpms, setRpms] = useState<number[]>([]);
     const [temps_motor, setTemps_motor] = useState<number[]>([]);
     const [temps_cvt, setTemps_cvt] = useState<number[]>([]);
+    // New state for Acceleration data
+    const [acc_xs, setAcc_xs] = useState<number[]>([]);
+    const [acc_ys, setAcc_ys] = useState<number[]>([]);
+    const [acc_zs, setAcc_zs] = useState<number[]>([]);
     const [caminho, setCaminho] = useState<[number, number][]>([]);
 
     useEffect(() => {
         if (data) {
             const timestamp = data.timestamp;
+            // Update timestamps and other data series
             if (typeof data.speed === "number") {
                 setVelocidades((prev) => [...prev.slice(-99), data.speed]);
                 setTimestamps((prev) => [...prev.slice(-99), timestamp]);
@@ -44,12 +49,23 @@ export default function Dashboard() {
             if (typeof data.temp_cvt === "number") {
                 setTemps_cvt((prev) => [...prev.slice(-99), data.temp_cvt]);
             }
+            // Capture Acceleration data
+            if (typeof data.acc_x === "number") {
+                setAcc_xs((prev) => [...prev.slice(-99), data.acc_x]);
+            }
+            if (typeof data.acc_y === "number") {
+                setAcc_ys((prev) => [...prev.slice(-99), data.acc_y]);
+            }
+            if (typeof data.acc_z === "number") {
+                setAcc_zs((prev) => [...prev.slice(-99), data.acc_z]);
+            }
+            
             if (typeof data.latitude === 'number' && typeof data.longitude === 'number' && !isNaN(data.latitude) && !isNaN(data.longitude)) {
                 const pos: [number, number] = [data.latitude, data.longitude];
                 setCaminho((prev) => [...prev, pos]);
             }
         }
-    }, [data]);
+    }, [data]); // Added dependencies to useEffect hook
 
     useEffect(() => {
         document.body.classList.toggle('light-mode', theme === 'light');
@@ -139,21 +155,59 @@ export default function Dashboard() {
                     <div className="graficos_dashboard">
                         <div className="left_panel">
                             <ChartGrafico
-                                titulo="Velocidade e RPM"
+                                titulo="Velocidade"
                                 timestamps={timestamps}
                                 series={[
                                     { label: "Velocidade", valores: velocidades, cor: "#a6e3a1" },
-                                    { label: "RPM", valores: rpms, cor: "#f9e2af" },
                                 ]}
                             />
                             <ChartGrafico
-                                titulo="Temperaturas"
+                                titulo="RPM"
+                                timestamps={timestamps}
+                                series={[
+                                    { label: "RPM", valores: rpms, cor: "#f9e2af" },
+                                ]}
+                            />
+                            <div className="acceleration_charts">
+                            <ChartGrafico
+                                titulo="Temperatura do motor"
                                 timestamps={timestamps}
                                 series={[
                                     { label: "Temp. Motor", valores: temps_motor, cor: "#f38ba8" },
+                                ]}
+                            />
+                            <ChartGrafico
+                                titulo="Temperatura da CVT"
+                                timestamps={timestamps}
+                                series={[
                                     { label: "Temp. CVT", valores: temps_cvt, cor: "#fab387" },
                                 ]}
                             />
+                            </div>
+                            {/* Gráficos de Aceleração adicionados aqui, dentro do left_panel */}
+                            <div className="acceleration_charts">
+                                <ChartGrafico
+                                    titulo="Aceleração X"
+                                    timestamps={timestamps}
+                                    series={[
+                                        { label: "Aceleração X", valores: acc_xs, cor: "#a28ba8" },
+                                    ]}
+                                />
+                                <ChartGrafico
+                                    titulo="Aceleração Y"
+                                    timestamps={timestamps}
+                                    series={[
+                                        { label: "Aceleração Y", valores: acc_ys, cor: "#a28ba8" },
+                                    ]}
+                                />
+                                <ChartGrafico
+                                    titulo="Aceleração Z"
+                                    timestamps={timestamps}
+                                    series={[
+                                        { label: "Aceleração Z", valores: acc_zs, cor: "#a28ba8" },
+                                    ]}
+                                />
+                            </div>
                         </div>
                         <div className="right_panel">
                             <CarModel roll={displayData.roll} pitch={displayData.pitch} />

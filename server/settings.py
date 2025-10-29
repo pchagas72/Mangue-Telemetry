@@ -3,9 +3,9 @@ from typing import Literal
 
 class Settings(BaseSettings):
     # Server serttings
-    # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
-    data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
-    broadcast_delay_seconds: float = 0.1
+    # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "serial"
+    data_source: Literal["serial", "mqtt", "simulator"] = "serial"
+    broadcast_delay_seconds: float = 0.5
 
     # MQTT Broker Settings
     mqtt_hostname: str = ""
@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     mqtt_password: str = ""
 
     # LoRa Serial Receiver Settings
-    serial_port: str = "/dev/ttyS7" # Change to your actual port
+    serial_port: str = "/dev/ttyUSB1" # Change to your actual port
     serial_baudrate: int = 115200
     serial_packet_format: str = "<fBBfBHhhhhhh hhH BddI" # Always check
 

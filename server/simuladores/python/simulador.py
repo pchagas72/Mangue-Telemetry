@@ -9,6 +9,7 @@ from datetime import datetime
 import math
 import time
 from typing import Dict, Any
+import random
 
 class Simulador:
     """
@@ -101,18 +102,18 @@ class Simulador:
             "dpsx": dpsx,
             "dpsy": dpsy,
             "dpsz": dpsz,
-            "roll": round(math.sin(c * 0.1) * 20, 2),
-            "pitch": round(math.cos(c * 0.1) * 10, 2),
-            "rpm": round(3000 + math.sin(c * 0.8) * 500, 2),
-            "speed": round((c * 2) % 60, 2),
-            "temperature": round(75 + math.cos(c * 0.3) * 3, 1),
-            "soc": round(98 - (c % 20), 1),
-            "temp_cvt": round(80 + math.sin(c * 0.2) * 5, 1), # Mapeado de 'cvt'
-            "volt": round(12.5 + math.sin(c * 0.1) * 0.5, 2),
-            "current": round(15.3 + math.cos(c * 0.1) * 2.0, 1),
+            "roll": 0.31,
+            "pitch": 0.50,
+            "rpm": random.randint(1600,1800),
+            "speed": 0,
+            "temperature": 80,
+            "soc": 97,
+            "temp_cvt": 74,
+            "volt": 11.8,
+            "current": 120,
             "flags": c % 2,
-            "latitude": round(-8.05428 + math.sin(c * 0.01) * 0.001, 6),
-            "longitude": round(-34.8813 + math.cos(c * 0.01) * 0.001, 6),
+            "latitude": 0,
+            "longitude": 0,
             "timestamp": datetime.now().isoformat(),
         }
 
