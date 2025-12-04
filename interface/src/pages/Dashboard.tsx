@@ -18,7 +18,16 @@ const formatNumber = (value: number | undefined | null, digits = 2): string => {
 };
 
 export default function Dashboard() {
-    const data = useTelemetry();
+    // --- STATE FOR CONNECTION ---
+    // State for the text input field
+    const [ipInput, setIpInput] = useState("localhost"); 
+    // State for the *active* connection. This triggers the hook.
+    const [connectedIp, setConnectedIp] = useState<string | null>(null);
+
+    // The hook now uses the 'connectedIp' state
+    const data = useTelemetry(connectedIp); 
+
+    // --- YOUR EXISTING STATE ---
     const [layout, setLayout] = useState<"pista" | "dados" | "graficos">("pista");
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const [timestamps, setTimestamps] = useState<number[]>([]);
@@ -74,7 +83,20 @@ export default function Dashboard() {
     const toggleTheme = () => {
         setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
     };
+    
+    // --- FUNCTION for the connect/disconnect button ---
+    const handleConnection = () => {
+        if (connectedIp) {
+            // If we are connected, disconnect
+            setConnectedIp(null);
+        } else {
+            // If we are disconnected, connect using the IP from the input
+            setConnectedIp(ipInput);
+        }
+    };
 
+    // True if we are connected, false otherwise
+    const connectionStatus = data !== null && connectedIp;
 
     const displayData: TelemetriaData = data || {
         speed: 0, rpm: 0, temperature: 0, temp_cvt: 0, soc: 0, volt: 0, current: 0,
@@ -86,6 +108,29 @@ export default function Dashboard() {
         <div className="dashboard">
             <div className="sideBar">
                 <img className="mangue_logo" src="/mangue_logo_white.avif" alt="Mangue Baja Logo" />
+                
+                {/* --- NEW CONNECTION CONTROLS --- */}
+                <div className="connection-controls">
+                    <label htmlFor="ip-input">Server IP:</label>
+                    <input 
+                        id="ip-input"
+                        type="text"
+                        value={ipInput}
+                        onChange={(e) => setIpInput(e.target.value)}
+                        disabled={!!connectedIp} // Disable input when connected
+                    />
+                    <button onClick={handleConnection} className={connectedIp ? 'stop' : 'start'}>
+                        {connectedIp ? 'Disconnect' : 'Connect'}
+                    </button>
+                    <p className="connection-status">
+                        Status: 
+                        <span style={{ color: connectionStatus ? '#4caf50' : '#e53935' }}>
+                            {connectionStatus ? ' Connected' : ' Disconnected'}
+                        </span>
+                    </p>
+                </div>
+                {/* --- END OF NEW CONTROLS --- */}
+
                 <button onClick={() => setLayout("pista")}>Pista</button>
                 <button onClick={() => setLayout("dados")}>Dados</button>
                 <button onClick={() => setLayout("graficos")}>Gráficos</button>

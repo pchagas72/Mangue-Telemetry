@@ -8,8 +8,8 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from settings import settings
 from services.parser import DataParser
 from services.database import DatabaseService
-from telemetry.telemetry_serial import SerialTelemetry
-from telemetry.mangue_telemetry import MangueTelemetry
+from telemetry.serial_receiver import SerialTelemetry
+from telemetry.mqtt_protocol import MqttProtocol
 from simuladores.python.simulador import Simulador
 
 # Setting up components
@@ -49,7 +49,7 @@ def get_telemetry_service():
                                packet_format=settings.serial_packet_format)
     elif source == "mqtt":
         logger.info("Using MQTT as data source.")
-        return MangueTelemetry(hostname=settings.mqtt_hostname,
+        return MqttProtocol(hostname=settings.mqtt_hostname,
                                port=settings.mqtt_port,
                                username=settings.mqtt_username,
                                password=settings.mqtt_password)
@@ -110,9 +110,6 @@ async def broadcast_telemetry():
                 if settings.data_source != "simulator":
                     db_service.save_telemetry_data(data_to_send)
                 
-                # Broadcasting
-                logger.info(f"Broadcasting data: Speed={data_to_send.get('speed')}, RPM={data_to_send.get('rpm')}")
-
                 if 'timestamp' in data_to_send and not isinstance(data_to_send['timestamp'], str):
                     data_to_send['timestamp'] = str(data_to_send['timestamp'])
 

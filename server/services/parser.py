@@ -51,4 +51,5 @@ class DataParser:
             "longitude": raw[17],
             "timestamp": raw[18],
         }
+        print(processed_data)
         return processed_data

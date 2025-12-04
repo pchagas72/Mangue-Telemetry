@@ -8,7 +8,7 @@ import asyncio
 import aiomqtt
 
 
-class MangueTelemetry:
+class MqttProtocol:
     """
         Classe responsável por receber e enviar dados de telemetria.
         Esta versão foi modificada para priorizar os dados mais recentes,

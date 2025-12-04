@@ -96,6 +96,65 @@ body {
     width: 150px;
 }
 
+/* --- STYLES FOR NEW CONNECTION CONTROLS --- */
+.connection-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 150px;
+    padding: 1rem 0;
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.connection-controls label {
+    font-size: 0.9rem;
+    color: var(--databox-title-color);
+}
+
+.connection-controls input {
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    border-radius: 4px;
+    padding: 8px;
+    width: 100%;
+}
+
+.connection-controls input:disabled {
+    background-color: var(--databox-bg);
+    opacity: 0.7;
+}
+
+.connection-controls button {
+    width: 100%;
+    height: 40px;
+    margin: 0;
+    color: #fff;
+    /* We can re-use the button styles you made for the lap timer! */
+}
+
+.connection-controls button.start {
+    background-color: #4caf50; /* Green */
+}
+.connection-controls button.start:hover {
+    background-color: #66bb6a;
+}
+
+.connection-controls button.stop {
+    background-color: #f44336; /* Red */
+}
+.connection-controls button.stop:hover {
+    background-color: #ef5350;
+}
+
+.connection-status {
+    text-align: center;
+    font-size: 0.9rem;
+}
+/* --- END OF NEW STYLES --- */
+
+
 .main_window {
     display: flex;
     flex-direction: column;
@@ -364,8 +423,10 @@ body {
         width: 100%;
         height: auto;
         flex-direction: row;
-        justify-content: space-around;
+        justify-content: center; /* Changed from space-around */
+        flex-wrap: wrap; /* Added this */
         padding: 1rem;
+        gap: 1rem; /* Added this for spacing */
         box-shadow: 0 2px 5px var(--shadow-color);
     }
 
@@ -373,8 +434,19 @@ body {
         display: none; /* Hide logo on small screens */
     }
 
+    /* Make connection controls stack nicely */
+    .sideBar .connection-controls {
+        width: 100%;
+        max-width: 350px; /* Limit width on tablets */
+        order: -1; /* Make it appear first */
+        padding: 0;
+        border: none;
+    }
+
     .sideBar button {
         width: auto;
+        flex-grow: 1; /* Allow buttons to grow */
+        min-width: 120px; /* Set a min width for 2x2 grid */
         padding: 0.5rem 1rem;
     }
 
