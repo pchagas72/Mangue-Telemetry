@@ -18,16 +18,12 @@ const formatNumber = (value: number | undefined | null, digits = 2): string => {
 };
 
 export default function Dashboard() {
-    // --- STATE FOR CONNECTION ---
-    // State for the text input field
+
     const [ipInput, setIpInput] = useState("localhost"); 
-    // State for the *active* connection. This triggers the hook.
     const [connectedIp, setConnectedIp] = useState<string | null>(null);
 
-    // The hook now uses the 'connectedIp' state
     const data = useTelemetry(connectedIp); 
 
-    // --- YOUR EXISTING STATE ---
     const [layout, setLayout] = useState<"pista" | "dados" | "graficos">("pista");
     const [theme, setTheme] = useState<'dark' | 'light'>('dark');
     const [timestamps, setTimestamps] = useState<number[]>([]);
@@ -35,7 +31,6 @@ export default function Dashboard() {
     const [rpms, setRpms] = useState<number[]>([]);
     const [temps_motor, setTemps_motor] = useState<number[]>([]);
     const [temps_cvt, setTemps_cvt] = useState<number[]>([]);
-    // New state for Acceleration data
     const [acc_xs, setAcc_xs] = useState<number[]>([]);
     const [acc_ys, setAcc_ys] = useState<number[]>([]);
     const [acc_zs, setAcc_zs] = useState<number[]>([]);
@@ -44,7 +39,6 @@ export default function Dashboard() {
     useEffect(() => {
         if (data) {
             const timestamp = data.timestamp;
-            // Update timestamps and other data series
             if (typeof data.speed === "number") {
                 setVelocidades((prev) => [...prev.slice(-99), data.speed]);
                 setTimestamps((prev) => [...prev.slice(-99), timestamp]);
@@ -74,7 +68,7 @@ export default function Dashboard() {
                 setCaminho((prev) => [...prev, pos]);
             }
         }
-    }, [data]); // Added dependencies to useEffect hook
+    }, [data]);
 
     useEffect(() => {
         document.body.classList.toggle('light-mode', theme === 'light');
@@ -84,18 +78,14 @@ export default function Dashboard() {
         setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
     };
     
-    // --- FUNCTION for the connect/disconnect button ---
     const handleConnection = () => {
         if (connectedIp) {
-            // If we are connected, disconnect
             setConnectedIp(null);
         } else {
-            // If we are disconnected, connect using the IP from the input
             setConnectedIp(ipInput);
         }
     };
 
-    // True if we are connected, false otherwise
     const connectionStatus = data !== null && connectedIp;
 
     const displayData: TelemetriaData = data || {
@@ -109,7 +99,6 @@ export default function Dashboard() {
             <div className="sideBar">
                 <img className="mangue_logo" src="/mangue_logo_white.avif" alt="Mangue Baja Logo" />
                 
-                {/* --- NEW CONNECTION CONTROLS --- */}
                 <div className="connection-controls">
                     <label htmlFor="ip-input">Server IP:</label>
                     <input 
@@ -129,7 +118,6 @@ export default function Dashboard() {
                         </span>
                     </p>
                 </div>
-                {/* --- END OF NEW CONTROLS --- */}
 
                 <button onClick={() => setLayout("pista")}>Pista</button>
                 <button onClick={() => setLayout("dados")}>Dados</button>
@@ -229,7 +217,6 @@ export default function Dashboard() {
                                 ]}
                             />
                             </div>
-                            {/* Gráficos de Aceleração adicionados aqui, dentro do left_panel */}
                             <div className="acceleration_charts">
                                 <ChartGrafico
                                     titulo="Aceleração X"
