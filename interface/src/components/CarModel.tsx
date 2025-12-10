@@ -8,7 +8,6 @@ interface CarModelProps {
 }
 
 export const CarModel: React.FC<CarModelProps> = ({ roll, pitch }) => {
-    // No useState or useEffect needed
     return (
         <div className="car-model-container">
             <div className="image-wrapper" style={{ transform: `rotateZ(${roll}deg)` }}>

@@ -29,7 +29,7 @@ export function ChartGrafico({ titulo, timestamps, series }: ChartMultivariavelP
       width: chartRef.current.clientWidth,
       height: 200,
       series: [
-        {}, // eixo X
+        {},
         ...series.map((s) => ({
           label: s.label,
           stroke: s.cor || "#00ADB5",
@@ -53,7 +53,7 @@ export function ChartGrafico({ titulo, timestamps, series }: ChartMultivariavelP
       uplotRef.current?.destroy();
       uplotRef.current = null;
     };
-  }, []); // 🔒 só cria uma vez
+  }, []);
 
   useEffect(() => {
     uplotRef.current?.setData(data as uPlot.AlignedData);

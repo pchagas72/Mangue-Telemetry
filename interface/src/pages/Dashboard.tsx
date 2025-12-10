@@ -52,7 +52,6 @@ export default function Dashboard() {
             if (typeof data.temp_cvt === "number") {
                 setTemps_cvt((prev) => [...prev.slice(-99), data.temp_cvt]);
             }
-            // Capture Acceleration data
             if (typeof data.acc_x === "number") {
                 setAcc_xs((prev) => [...prev.slice(-99), data.acc_x]);
             }
