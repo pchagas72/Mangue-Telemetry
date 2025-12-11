@@ -83,10 +83,6 @@ To make the system accessible to all team members, regardless of their technical
 
 | Feature | Status |
 |---------|--------|
-| **Starter** | |
-| Simple Installer and Launcher | ✅ |
-| Turn the starter into an app hub | 🚧 |
-| Complete Documentation | 🚧 |
 | **Backend (server)** | |
 | Telemetry broadcast via MQTT | ✅ |
 | Data storage with SQLite | ✅ |
@@ -94,9 +90,8 @@ To make the system accessible to all team members, regardless of their technical
 | ENV-based authentication | ✅ |
 | Telemetry broadcast via LoRa | ✅ |
 | Replay of past sessions | 🚧 |
-| Debug and ECU "box" interface | 🚧 |
 | Apply filters from iLogger | 🚧 |
-| Build executable | 🚧 |
+| Debug and ECU "box" interface | 🚧 |
 | **Frontend (interface)** | |
 | Data reception and processing | ✅ |
 | Real-time map | ✅ |
@@ -106,10 +101,9 @@ To make the system accessible to all team members, regardless of their technical
 | Battery status | ✅ |
 | Real-time graphs | ✅ |
 | Replay interface | 🚧 |
-| Predictive failure neural network | 🚧 |
 | Debug and ECU "box" interface | 🚧 |
 | Data visualization page for iLogger | 🚧 |
-| Build executable | 🚧 |
+| Predictive failure neural network | 🚧 |
 
 ---
 
