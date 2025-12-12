@@ -10,16 +10,18 @@ const marcadorIcon = L.icon({
     iconAnchor: [12, 41]
 });
 
-// Added optional sfLocation argument
+// Added optional sfLocation argument for marking new laps
 export function Mapa(
     latitude: number, 
     longitude: number, 
     caminho: [number, number][], 
-    sfLocation?: { lat: number, lon: number } | null
+    sfLocation?: { lat: number, lon: number } | null,
+    sfRadius?: number | null,
 ) {
     if (typeof latitude !== "number" || typeof longitude !== "number") return null;
+    if (typeof sfRadius !== "number") sfRadius=25;
 
-    // Safety check for path array
+    // Safety check
     const safeCaminho = Array.isArray(caminho) ? caminho : [];
 
     return (
@@ -43,7 +45,7 @@ export function Mapa(
                 <Circle 
                     center={[sfLocation.lat, sfLocation.lon]}
                     pathOptions={{ color: 'white', fillColor: 'white', fillOpacity: 0.5 }}
-                    radius={3} // 3 meters radius
+                    radius={sfRadius} // sfRadius meters radius
                 />
             )}
             

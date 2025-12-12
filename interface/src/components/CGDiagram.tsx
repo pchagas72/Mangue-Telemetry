@@ -12,8 +12,6 @@ export const GGDiagram = () => {
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
-        // 1. Setup Canvas Dimensions & Scaling
-        // We want a square coordinate system centered in the canvas
         const w = canvas.width;
         const h = canvas.height;
         const cx = w / 2;
@@ -23,7 +21,7 @@ export const GGDiagram = () => {
         // Clear Screen
         ctx.clearRect(0, 0, w, h);
 
-        // 2. Draw Engineering Grid (The "Friction Circle")
+        // Draw Grid (circle)
         ctx.lineWidth = 1;
         ctx.strokeStyle = '#333';
         ctx.fillStyle = '#111';
@@ -50,8 +48,7 @@ export const GGDiagram = () => {
         ctx.fillText("LATERAL", w - 50, cy - 5);
         ctx.fillText("LONG", cx + 5, 15);
 
-        // 3. Draw Data Trail (History)
-        // We take the last ~50 points to show the driver's recent inputs
+        // Draws the data and 50 previous points
         const trailLength = Math.min(history.acc_x.length, 50);
         const startIndex = history.acc_x.length - trailLength;
 
@@ -77,7 +74,7 @@ export const GGDiagram = () => {
             }
         }
 
-        // 4. Draw Current Point (The "Ball")
+        // Draw Current Point (Ball)
         const currX = cx + (latestData.acc_y * scale);
         const currY = cy - (latestData.acc_x * scale);
 
@@ -92,7 +89,7 @@ export const GGDiagram = () => {
         ctx.fillStyle = grad;
         ctx.fill();
 
-        // 5. Digital Readout overlay
+        // Digital Readout overlay
         ctx.fillStyle = '#FFF';
         ctx.font = 'bold 12px Consolas';
         ctx.fillText(`X: ${latestData.acc_x.toFixed(2)}`, 10, h - 25);

@@ -1,3 +1,4 @@
+// All data received from the server goes here
 export type TelemetriaData = {
   speed: number;
   rpm: number;

@@ -1,4 +1,3 @@
-// src/components/BarGauge.tsx
 import React from "react";
 
 interface BarGaugeProps {
@@ -25,8 +24,7 @@ export const BarGauge: React.FC<BarGaugeProps> = ({
   const safeValue = Math.min(Math.max(value, min), max);
   const percentage = ((safeValue - min) / (max - min)) * 100;
 
-  // Engineering Colors
-  let color = "#00FF00"; // Green
+  let color = "#00FF00";
 
   if (inverted) {
     if (value <= critical_value) color = "#FF3333";

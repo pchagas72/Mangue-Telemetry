@@ -2,7 +2,7 @@ import { createContext, useContext } from "react";
 import type { ReactNode } from "react";
 import type { TelemetriaData } from "../types/TelemetriaData";
 
-// Define the shape of your context
+// The context must hold all displayed data
 interface TelemetryContextType {
     latestData: TelemetriaData | null;
     history: {
@@ -31,14 +31,14 @@ interface TelemetryContextType {
         path: [number, number][];
     };
     connectedIp: string | null;
-    startFinishLine?: { lat: number; lon: number } | null; // NEW FIELD
+    startFinishLine?: { lat: number; lon: number } | null;
 }
 
 const TelemetryContext = createContext<TelemetryContextType | null>(null);
 
 export function useTelemetryData() {
     const context = useContext(TelemetryContext);
-    // Return a safe default if used outside the provider
+        // This is a safe return in case of no provider (server)
     if (!context) {
         return {
             latestData: null,
@@ -50,6 +50,7 @@ export function useTelemetryData() {
     return context;
 }
 
+// Think of this as a context wrapper
 export const TelemetryProvider = ({ children, value }: { children: ReactNode, value: TelemetryContextType }) => (
     <TelemetryContext.Provider value={value}>
         {children}
