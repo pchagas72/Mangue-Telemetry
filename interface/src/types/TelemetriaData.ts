@@ -21,4 +21,5 @@ export type TelemetriaData = {
   longitude: number;
   timestamp: number;
   flags: number;
+  path: [number, number][];
 };

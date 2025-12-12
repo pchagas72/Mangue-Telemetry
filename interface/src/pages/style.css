@@ -1,487 +1,206 @@
-/* BASE STYLES */
+/* BASE VARIABLES - ENGINEERING THEME */
 :root {
-    --bg-color: #1a1a1a;
-    --text-color: #f0f0f0;
-    --sidebar-bg: #2c2c2c;
-    --button-bg: #3a3a3a;
-    --button-hover-bg: #4a90e2;
-    --databox-bg: #3a3a3a;
-    --databox-title-color: #aaa;
-    --databox-value-color: #4a90e2;
-    --panel-bg: #2c2c2c;
-    --border-color: #444;
-    --shadow-color: rgba(0, 0, 0, 0.5);
-    --scrollbar-track-bg: #3a3a3a;
-    --scrollbar-thumb-bg: #555;
-    --scrollbar-thumb-hover-bg: #666;
-}
-
-body.light-mode {
-    --bg-color: #f0f0f0;
-    --text-color: #1a1a1a;
-    --sidebar-bg: #e0e0e0;
-    --button-bg: #d0d0d0;
-    --button-hover-bg: #4a90e2;
-    --databox-bg: #e0e0e0;
-    --databox-title-color: #555;
-    --databox-value-color: #007bff;
-    --panel-bg: #f5f5f5;
-    --border-color: #ccc;
-    --shadow-color: rgba(0, 0, 0, 0.1);
-    --scrollbar-track-bg: #d0d0d0;
-    --scrollbar-thumb-bg: #aaa;
-    --scrollbar-thumb-hover-bg: #888;
-}
-
-
-* {
-    padding: 0;
-    margin: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Roboto', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    width: 100%;
-    height: 100vh;
-    overflow: hidden;
-}
-
-#root, :root, .app-container {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-.dashboard {
-    display: flex;
-    width: 100%;
-    height: 100%;
-}
-
-/* SIDEBAR AND NAVIGATION */
-.sideBar {
-    height: 100vh;
-    background-color: var(--sidebar-bg);
-    width: 200px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 2rem;
-    gap: 1.5rem;
-    box-shadow: 2px 0 5px var(--shadow-color);
-    transition: width 0.3s ease;
-}
-
-.sideBar button {
-    width: 150px;
-    height: 45px;
-    background-color: var(--button-bg);
-    color: var(--text-color);
-    border: none;
-    border-radius: 8px;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-.sideBar button:hover {
-    background-color: var(--button-hover-bg);
-}
-
-.sideBar img {
-    width: 150px;
-}
-
-/* --- STYLES FOR NEW CONNECTION CONTROLS --- */
-.connection-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 150px;
-    padding: 1rem 0;
-    border-top: 1px solid var(--border-color);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.connection-controls label {
-    font-size: 0.9rem;
-    color: var(--databox-title-color);
-}
-
-.connection-controls input {
-    background-color: var(--bg-color);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    border-radius: 4px;
-    padding: 8px;
-    width: 100%;
-}
-
-.connection-controls input:disabled {
-    background-color: var(--databox-bg);
-    opacity: 0.7;
-}
-
-.connection-controls button {
-    width: 100%;
-    height: 40px;
-    margin: 0;
-    color: #fff;
-    /* We can re-use the button styles you made for the lap timer! */
-}
-
-.connection-controls button.start {
-    background-color: #4caf50; /* Green */
-}
-.connection-controls button.start:hover {
-    background-color: #66bb6a;
-}
-
-.connection-controls button.stop {
-    background-color: #f44336; /* Red */
-}
-.connection-controls button.stop:hover {
-    background-color: #ef5350;
-}
-
-.connection-status {
-    text-align: center;
-    font-size: 0.9rem;
-}
-/* --- END OF NEW STYLES --- */
-
-
-.main_window {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-    padding: 20px;
-    overflow-y: auto;
-}
-
-/* CAR MODEL COMPONENT */
-.car-model-container {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    gap: 20px;
-    background-color: var(--panel-bg);
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 4px 10px var(--shadow-color);
-}
-
-.image-wrapper {
-    width: 100%;
-    max-width: 150px;
-    transition: transform 0.2s ease-out;
-}
-
-.image-wrapper img {
-    width: 100%;
-    height: auto;
-}
-
-/* DASHBOARD LAYOUTS */
-.dashboard-grid {
-    display: grid;
-    gap: 20px;
-    height: 100%;
-}
-
-.dashboard-pista {
-    grid-template-columns: 3fr 1fr;
-    grid-template-rows: 1fr auto;
-    grid-template-areas:
-        "mapa status"
-        "dados carmodel";
-}
-
-.dashboard-dados {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    grid-template-areas:
-        "dados"
-        "serial";
-}
-
-/* GRID AREAS */
-.map-panel {
-    grid-area: mapa;
-}
-
-.data-panel-large {
-    grid-area: dados;
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 15px;
-    background-color: var(--panel-bg);
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px var(--shadow-color);
-}
-
-.serial-panel {
-    grid-area: serial;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.carmodel-panel {
-    grid-area: carmodel;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.status-panel {
-    grid-area: status;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-/* DATA BOXES */
-.databox {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    background-color: var(--databox-bg);
-    border-radius: 8px;
-    padding: 1rem;
-    text-align: center;
-}
-
-.databox h3 {
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-    color: var(--databox-title-color);
-}
-
-.databox p {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: var(--databox-value-color);
-}
-
-/* MISC COMPONENTS */
-.SerialDiv textarea {
-    width: 100%;
-    height: 200px;
-    background-color: var(--panel-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    color: var(--text-color);
-    padding: 1rem;
-    font-family: 'Courier New', Courier, monospace;
-    resize: none;
-}
-
-.bateria_container {
-    background-color: var(--panel-bg);
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 4px 10px var(--shadow-color);
-}
-
-.soc_bar_container {
-    width: 100%;
-    height: 24px;
-    background-color: var(--databox-bg);
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 8px;
-    border: 1px solid var(--border-color);
-}
-
-.soc_bar {
-    height: 100%;
-    transition: width 0.4s ease;
-    border-radius: 12px 0 0 12px;
-}
-
-.lap-list {
-    list-style: none;
-    padding: 0 1rem;
-    margin-top: 1rem;
-    max-height: 150px; /* Adjust as needed */
-    overflow-y: auto;
-}
-
-/* Custom Scrollbar */
-.lap-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.lap-list::-webkit-scrollbar-track {
-    background: var(--scrollbar-track-bg);
-    border-radius: 8px;
-}
-
-.lap-list::-webkit-scrollbar-thumb {
-    background: var(--scrollbar-thumb-bg);
-    border-radius: 8px;
-}
-
-.lap-list::-webkit-scrollbar-thumb:hover {
-    background: var(--scrollbar-thumb-hover-bg);
-}
-
-/* LAP TIMER BUTTONS */
-.lap-timer-buttons {
-    display: flex;
-    justify-content: space-around;
-    margin-top: 1rem;
-}
-
-.lap-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    border: none;
-    border-radius: 8px;
-    color: #fff;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    background-color: #6c757d; /* Default gray for Lap button */
-}
-
-.lap-button:disabled {
-    background-color: #555;
-    cursor: not-allowed;
-}
-
-.lap-button.start, .lap-button.lap:not(:disabled) {
-    background-color: #4caf50; /* Green */
-}
-
-.lap-button.start:hover, .lap-button.lap:not(:disabled):hover {
-    background-color: #66bb6a;
-}
-
-.lap-button.stop {
-    background-color: #f44336; /* Red */
-}
-
-.lap-button.stop:hover {
-    background-color: #ef5350;
-}
-
-.lap-button.reset {
-    background-color: #ff9800; /* Orange */
-}
-
-.lap-button.reset:hover {
-    background-color: #ffa726;
-}
-
-/* GRAPHS LAYOUT - AJUSTADO PARA O NOVO LAYOUT DA IMAGEM */
-.graficos_dashboard {
-    display: flex;
-    gap: 20px;
-}
-
-/* left_panel agora contém TODOS os gráficos (Velocidade, RPM, Temps, Accel X, Y, Z) */
-.left_panel {
-    display: flex;
-    flex-direction: column;
-    width: 70%; /* Ocupa a maior parte da tela para os gráficos */
-    gap: 20px;
-}
-
-/* Contêiner para os 3 gráficos de aceleração lado a lado */
-.acceleration_charts {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr); /* 3 colunas de largura igual */
-    gap: 20px;
-    /* Ajusta a altura mínima para que eles fiquem pequenos, como na imagem */
-    min-height: 250px; 
-}
-
-/* Removido o .middle_panel, pois ele não é mais necessário */
-/* O right_panel agora tem o Mapa, CarModel, Bateria e Status/Log */
-.right_panel {
-    display: flex;
-    flex-direction: column;
-    width: 30%; /* Ocupa o restante da tela para Mapa e Status */
-    gap: 20px;
-}
-
-/* MOBILE-FRIENDLY STYLES */
-@media (max-width: 768px) {
-    .dashboard {
-        flex-direction: column;
-    }
-
-    .sideBar {
-        width: 100%;
-        height: auto;
-        flex-direction: row;
-        justify-content: center; /* Changed from space-around */
-        flex-wrap: wrap; /* Added this */
-        padding: 1rem;
-        gap: 1rem; /* Added this for spacing */
-        box-shadow: 0 2px 5px var(--shadow-color);
-    }
-
-    .sideBar img {
-        display: none; /* Hide logo on small screens */
-    }
-
-    /* Make connection controls stack nicely */
-    .sideBar .connection-controls {
-        width: 100%;
-        max-width: 350px; /* Limit width on tablets */
-        order: -1; /* Make it appear first */
-        padding: 0;
-        border: none;
-    }
-
-    .sideBar button {
-        width: auto;
-        flex-grow: 1; /* Allow buttons to grow */
-        min-width: 120px; /* Set a min width for 2x2 grid */
-        padding: 0.5rem 1rem;
-    }
-
-    .main_window {
-        padding: 10px;
-    }
-
-    .dashboard-pista {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto;
-        grid-template-areas:
-            "mapa"
-            "dados"
-            "status"
-            "carmodel";
-    }
-
-    .data-panel-large {
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    }
-
-    .graficos_dashboard {
-        flex-direction: column;
-    }
-
-    .left_panel,
-    .right_panel {
-        width: 100%;
-    }
+    /* MoTeC / Engineering Palette */
+    --bg-color: #000000;           /* Pure Black */
+    --panel-bg: #121212;           /* Very Dark Grey for panels */
+    --header-bg: #1e1e1e;          /* Slightly lighter for headers */
     
-    .acceleration_charts {
-        grid-template-columns: 1fr; /* Volta para 1 coluna no celular */
-    }
-
-    .car-model-container {
-        flex-direction: column;
-    }
+    --text-main: #f0f0f0;          /* Bright White/Grey */
+    --text-muted: #a0a0a0;         /* Dimmed labels */
+    
+    --border-color: #333333;       /* Subtle borders */
+    
+    --accent-cyan: #00FFFF;
+    --accent-green: #00FF00;
+    --accent-yellow: #FFFF00;
+    --accent-red: #FF3333;
+    
+    --font-tech: 'Consolas', 'Monaco', 'Courier New', monospace;
+    --font-ui: 'Segoe UI', 'Roboto', sans-serif;
 }
+
+/* RESET & BASE */
+* { padding: 0; margin: 0; box-sizing: border-box; }
+body { background-color: var(--bg-color); color: var(--text-main); font-family: var(--font-ui); height: 100vh; overflow: hidden; }
+#root, .app-container { width: 100%; height: 100%; display: flex; flex-direction: column; }
+
+/* --- DOCKVIEW THEME OVERRIDES --- */
+.dockview-theme-abyss .dv-group-view { background-color: var(--bg-color) !important; border: 1px solid var(--border-color); }
+.dockview-theme-abyss .dv-tab { background-color: #1a1a1a !important; color: var(--text-muted) !important; border-right: 1px solid #222; font-family: var(--font-ui); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 0 !important; }
+.dockview-theme-abyss .dv-tab.dv-active-tab { background-color: var(--bg-color) !important; color: var(--accent-cyan) !important; border-top: 2px solid var(--accent-cyan); }
+.dockview-theme-abyss .dv-tabs-and-actions-container { background-color: #1a1a1a !important; border-bottom: 1px solid var(--border-color); height: 28px !important; }
+
+/* --- HEADER / CONNECTION BAR --- */
+.connection-bar {
+    background-color: #111;
+    border-bottom: 1px solid var(--border-color);
+    padding: 0 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    height: 48px;
+    font-family: var(--font-ui);
+}
+
+.app-logo {
+    font-family: var(--font-tech);
+    font-weight: bold;
+    font-size: 18px;
+    letter-spacing: 1px;
+    margin-right: 5px;
+}
+
+.divider-v {
+    width: 1px;
+    height: 25px;
+    background-color: #333;
+}
+
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.input-group {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.input-label {
+    font-size: 8px;
+    color: #666;
+    margin-bottom: 1px;
+    font-weight: bold;
+}
+
+.connection-input {
+    background-color: #000;
+    border: 1px solid #444;
+    color: var(--accent-green);
+    font-family: var(--font-tech);
+    padding: 2px 6px;
+    font-size: 12px;
+    width: 120px;
+    outline: none;
+    height: 24px;
+}
+.connection-input:focus { border-color: var(--accent-cyan); }
+
+.btn-tech {
+    background: #222;
+    color: #ccc;
+    border: 1px solid #444;
+    padding: 0 15px;
+    height: 24px;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+.btn-tech:hover { background: #333; border-color: #777; color: #fff; }
+.btn-tech.connect { background: #003300; border-color: #005500; color: #ccffcc; }
+.btn-tech.connect:hover { background: #004d00; border-color: #00ff00; }
+.btn-tech.disconnect { background: #330000; border-color: #550000; color: #ffcccc; }
+.btn-tech.disconnect:hover { background: #4d0000; border-color: #ff0000; }
+
+.mode-toggle {
+    display: flex;
+    border: 1px solid #444;
+    background: #000;
+    height: 24px;
+}
+.mode-option {
+    padding: 0 10px;
+    font-size: 10px;
+    font-weight: bold;
+    color: #666;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.mode-option.active {
+    background-color: #333;
+    color: var(--accent-cyan);
+}
+.mode-option:first-child { border-right: 1px solid #444; }
+
+/* Session Info - Expanded for Timer */
+.session-info {
+    display: flex;
+    gap: 20px;
+}
+.info-block {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    min-width: 40px;
+}
+.info-label {
+    font-size: 8px;
+    color: #666;
+    font-weight: bold;
+}
+.info-value {
+    font-family: var(--font-tech);
+    font-size: 16px; /* Larger for time */
+    color: #fff;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+}
+.info-value.time { color: var(--accent-yellow); }
+
+.connection-status { margin-left: auto; font-size: 0.7em; font-family: var(--font-tech); letter-spacing: 1px; }
+.status-connected { color: var(--accent-green); text-shadow: 0 0 5px rgba(0,255,0,0.5); }
+.status-disconnected { color: #444; }
+
+/* Hide less important stats on small screens */
+@media (max-width: 900px) {
+    .mobile-hide { display: none; }
+}
+
+/* --- CHART STYLES --- */
+.grafico_multivariavel {
+    position: relative;
+    background-color: #000000;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding-top: 25px; 
+}
+.uplot { font-family: var(--font-tech) !important; }
+.u-legend {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 25px;
+    background: #111; border-bottom: 1px solid #333;
+    display: flex; align-items: center; padding: 0 10px;
+    font-size: 11px !important; z-index: 10; overflow: hidden;
+}
+.u-legend tr { display: inline-flex; margin-right: 15px; align-items: center; }
+.u-label { font-weight: normal; color: #888; margin-right: 5px; text-transform: uppercase; }
+.u-value { font-weight: bold; font-size: 12px; color: #fff; min-width: 40px; }
+.u-axis-label { font-size: 10px !important; fill: #666 !important; font-weight: normal; text-transform: uppercase; }
+.u-cursor-x, .u-cursor-y { border-color: rgba(255, 255, 255, 0.5) !important; border-style: dashed; }
+
+/* --- OTHER PANELS --- */
+.live-data-container { height: 100%; overflow-y: auto; background-color: var(--bg-color); padding: 10px; font-family: var(--font-tech); }
+.data-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background-color: #333; border: 1px solid #333; margin-bottom: 15px; }
+.data-box { background-color: var(--bg-color); padding: 8px; display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 60px; }
+.data-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; }
+.data-value { font-size: 22px; font-weight: bold; color: var(--accent-yellow); }
+.data-unit { font-size: 10px; color: #666; margin-left: 2px; font-weight: normal; }
+.bar-gauge-container { margin-bottom: 8px; background: transparent; }
+.bar-gauge-header { display: flex; justify-content: space-between; margin-bottom: 2px; font-family: var(--font-tech); font-size: 11px; }
+.bar-bg { width: 100%; height: 8px; background: #1a1a1a; border: 1px solid #333; position: relative; }
+.bar-fill { height: 100%; transition: width 0.1s linear; }
+.car-model-container { display: flex; justify-content: space-around; align-items: center; gap: 20px; background-color: var(--bg-color); padding: 20px; height: 100%; width: 100%; overflow: hidden; }
+.image-wrapper { width: 100%; max-width: 140px; aspect-ratio: 1; display: flex; align-items: center; justify-content: center; transition: transform 0.1s linear; }
+.image-wrapper img { width: 100%; height: auto; filter: grayscale(100%) contrast(1.2); opacity: 0.9; }

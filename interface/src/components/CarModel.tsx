@@ -1,13 +1,8 @@
 // src/components/CarModel.tsx
-import React from "react";
 import "../pages/style.css";
 
-interface CarModelProps {
-    roll: number;
-    pitch: number;
-}
 
-export const CarModel: React.FC<CarModelProps> = ({ roll, pitch }) => {
+export const CarModel = (roll: number, pitch: number) => {
     return (
         <div className="car-model-container">
             <div className="image-wrapper" style={{ transform: `rotateZ(${roll}deg)` }}>

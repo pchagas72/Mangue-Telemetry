@@ -100,10 +100,10 @@ To make the system accessible to all team members, regardless of their technical
 | Display of all critical data | ✅ |
 | Battery status | ✅ |
 | Real-time graphs | ✅ |
-| Replay interface | 🚧 |
+| Build a MoTeC 2 and mclaren ATLAS-like interface | 🚧 |
 | Debug and ECU "box" interface | 🚧 |
 | Data visualization page for iLogger | 🚧 |
-| Predictive failure neural network | 🚧 |
+| Replay feature | 🚧 |
 
 ---
 

@@ -1,252 +1,390 @@
+// src/pages/Dashboard.tsx
+import _React, { useEffect, useState } from "react";
+import { DockviewReact, DockviewApi } from "dockview";
+import type { IDockviewPanelProps } from "dockview";
+import type { DockviewReadyEvent } from "dockview";
+import "dockview/dist/styles/dockview.css";
 import "./style.css";
-import { ChartGrafico } from "../components/ChartGrafico";
-import { Mapa } from "../components/Mapa";
-import { Bateria } from "../components/Bateria";
-import { Serial } from "../components/Serial";
-import { useTelemetry } from "../hooks/useTelemetry";
-import { useEffect, useState } from "react";
-import { CarModel } from "../components/CarModel";
-import { LapTimer } from "../components/LapTimer";
-import { Status } from "../components/Status";
-import type { TelemetriaData } from "../types/TelemetriaData";
 
-const formatNumber = (value: number | undefined | null, digits = 2): string => {
-    if (typeof value !== 'number' || isNaN(value)) {
-        return 'N/A';
-    }
-    return value.toFixed(digits);
+// Internal Components
+import { useTelemetry } from "../hooks/useTelemetry";
+import { ChartPanel } from "../components/ChartPanel";
+import { TelemetryProvider, useTelemetryData } from "../context/TelemetryContext";
+import type { TelemetriaData } from "../types/TelemetriaData";
+import { Mapa } from "../components/Mapa";
+import { CarModel } from "../components/CarModel";
+import { LiveCarPanel } from "../components/LiveCarPanel";
+
+// --- Helpers ---
+function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
+  var R = 6371; 
+  var dLat = deg2rad(lat2 - lat1);
+  var dLon = deg2rad(lon2 - lon1);
+  var a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  var d = R * c; 
+  return d * 1000; 
+}
+
+function deg2rad(deg: number) {
+  return deg * (Math.PI / 180);
+}
+
+const formatLapTime = (ms: number) => {
+    const min = Math.floor(ms / 60000);
+    const sec = Math.floor((ms % 60000) / 1000);
+    const mil = Math.floor((ms % 1000) / 10); 
+    return `${min}:${sec.toString().padStart(2, '0')}.${mil.toString().padStart(2, '0')}`;
 };
 
-export default function Dashboard() {
-
-    const [ipInput, setIpInput] = useState("localhost"); 
-    const [connectedIp, setConnectedIp] = useState<string | null>(null);
-
-    const data = useTelemetry(connectedIp); 
-
-    const [layout, setLayout] = useState<"pista" | "dados" | "graficos">("pista");
-    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
-    const [timestamps, setTimestamps] = useState<number[]>([]);
-    const [velocidades, setVelocidades] = useState<number[]>([]);
-    const [rpms, setRpms] = useState<number[]>([]);
-    const [temps_motor, setTemps_motor] = useState<number[]>([]);
-    const [temps_cvt, setTemps_cvt] = useState<number[]>([]);
-    const [acc_xs, setAcc_xs] = useState<number[]>([]);
-    const [acc_ys, setAcc_ys] = useState<number[]>([]);
-    const [acc_zs, setAcc_zs] = useState<number[]>([]);
-    const [caminho, setCaminho] = useState<[number, number][]>([]);
-
-    useEffect(() => {
-        if (data) {
-            const timestamp = data.timestamp;
-            if (typeof data.speed === "number") {
-                setVelocidades((prev) => [...prev.slice(-99), data.speed]);
-                setTimestamps((prev) => [...prev.slice(-99), timestamp]);
-            }
-            if (typeof data.rpm === "number") {
-                setRpms((prev) => [...prev.slice(-99), data.rpm]);
-            }
-            if (typeof data.temperature === "number") {
-                setTemps_motor((prev) => [...prev.slice(-99), data.temperature]);
-            }
-            if (typeof data.temp_cvt === "number") {
-                setTemps_cvt((prev) => [...prev.slice(-99), data.temp_cvt]);
-            }
-            if (typeof data.acc_x === "number") {
-                setAcc_xs((prev) => [...prev.slice(-99), data.acc_x]);
-            }
-            if (typeof data.acc_y === "number") {
-                setAcc_ys((prev) => [...prev.slice(-99), data.acc_y]);
-            }
-            if (typeof data.acc_z === "number") {
-                setAcc_zs((prev) => [...prev.slice(-99), data.acc_z]);
-            }
-            
-            if (typeof data.latitude === 'number' && typeof data.longitude === 'number' && !isNaN(data.latitude) && !isNaN(data.longitude)) {
-                const pos: [number, number] = [data.latitude, data.longitude];
-                setCaminho((prev) => [...prev, pos]);
-            }
-        }
-    }, [data]);
-
-    useEffect(() => {
-        document.body.classList.toggle('light-mode', theme === 'light');
-    }, [theme]);
-
-    const toggleTheme = () => {
-        setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
-    };
-    
-    const handleConnection = () => {
-        if (connectedIp) {
-            setConnectedIp(null);
-        } else {
-            setConnectedIp(ipInput);
-        }
-    };
-
-    const connectionStatus = data !== null && connectedIp;
-
-    const displayData: TelemetriaData = data || {
-        speed: 0, rpm: 0, temperature: 0, temp_cvt: 0, soc: 0, volt: 0, current: 0,
-        acc_x: 0, acc_y: 0, acc_z: 0, dps_x: 0, dps_y: 0, dps_z: 0,
-        roll: 0, pitch: 0, latitude: 0, longitude: 0, timestamp: 0, flags: 0,
-    };
-
-    return (
-        <div className="dashboard">
-            <div className="sideBar">
-                <img className="mangue_logo" src="/mangue_logo_white.avif" alt="Mangue Baja Logo" />
-                
-                <div className="connection-controls">
-                    <label htmlFor="ip-input">Server IP:</label>
-                    <input 
-                        id="ip-input"
-                        type="text"
-                        value={ipInput}
-                        onChange={(e) => setIpInput(e.target.value)}
-                        disabled={!!connectedIp} // Disable input when connected
-                    />
-                    <button onClick={handleConnection} className={connectedIp ? 'stop' : 'start'}>
-                        {connectedIp ? 'Disconnect' : 'Connect'}
-                    </button>
-                    <p className="connection-status">
-                        Status: 
-                        <span style={{ color: connectionStatus ? '#4caf50' : '#e53935' }}>
-                            {connectionStatus ? ' Connected' : ' Disconnected'}
-                        </span>
-                    </p>
-                </div>
-
-                <button onClick={() => setLayout("pista")}>Pista</button>
-                <button onClick={() => setLayout("dados")}>Dados</button>
-                <button onClick={() => setLayout("graficos")}>Gráficos</button>
-                <button onClick={toggleTheme}>
-                    {theme === 'light' ? 'Dark Mode' : 'Light Mode'}
-                </button>
-            </div>
-            <main className="main_window">
-                {layout === "pista" && (
-                    <div className="dashboard-grid dashboard-pista">
-                        <div className="map-panel">
-                            <Mapa latitude={displayData.latitude} longitude={displayData.longitude} caminho={caminho} />
-                        </div>
-                        <div className="data-panel-large">
-                            <div className="databox">
-                                <h3>Velocidade</h3>
-                                <p>{formatNumber(displayData.speed, 1)} km/h</p>
-                            </div>
-                            <div className="databox">
-                                <h3>RPM</h3>
-                                <p>{formatNumber(displayData.rpm, 0)}</p>
-                            </div>
-                            <div className="databox">
-                                <h3>Temp. Motor</h3>
-                                <p>{formatNumber(displayData.temperature, 1)} ºC</p>
-                            </div>
-                            <div className="databox">
-                                <h3>Temp. CVT</h3>
-                                <p>{formatNumber(displayData.temp_cvt, 1)} ºC</p>
-                            </div>
-                        </div>
-                        <div className="carmodel-panel">
-                           <CarModel roll={displayData.roll} pitch={displayData.pitch} />
-                        </div>
-                        <div className="status-panel">
-                            <Status data={displayData} />
-                            <LapTimer />
-                            <Bateria soc={displayData.soc} tensao={displayData.volt} corrente={displayData.current} />
-                        </div>
-                    </div>
-                )}
-                {layout === "dados" && (
-                    <div className="dashboard-grid dashboard-dados">
-                        <div className="data-panel-large">
-                            <div className="databox"><h3>Velocidade</h3><p>{formatNumber(displayData.speed, 1)} km/h</p></div>
-                            <div className="databox"><h3>RPM</h3><p>{formatNumber(displayData.rpm, 0)}</p></div>
-                            <div className="databox"><h3>Temp. Motor</h3><p>{formatNumber(displayData.temperature, 1)} ºC</p></div>
-                            <div className="databox"><h3>Temp. CVT</h3><p>{formatNumber(displayData.temp_cvt, 1)} ºC</p></div>
-                            <div className="databox"><h3>SOC</h3><p>{formatNumber(displayData.soc, 0)}%</p></div>
-                            <div className="databox"><h3>Tensão</h3><p>{formatNumber(displayData.volt, 2)} V</p></div>
-                            <div className="databox"><h3>Corrente</h3><p>{formatNumber(displayData.current, 0)} mA</p></div>
-                            <div className="databox"><h3>Acc X</h3><p>{formatNumber(displayData.acc_x, 2)} g</p></div>
-                            <div className="databox"><h3>Acc Y</h3><p>{formatNumber(displayData.acc_y, 2)} g</p></div>
-                            <div className="databox"><h3>Acc Z</h3><p>{formatNumber(displayData.acc_z, 2)} g</p></div>
-                            <div className="databox"><h3>DPS X</h3><p>{formatNumber(displayData.dps_x, 2)} dps</p></div>
-                            <div className="databox"><h3>DPS Y</h3><p>{formatNumber(displayData.dps_y, 2)} dps</p></div>
-                            <div className="databox"><h3>DPS Z</h3><p>{formatNumber(displayData.dps_z, 2)} dps</p></div>
-                            <div className="databox"><h3>Roll</h3><p>{formatNumber(displayData.roll, 2)}°</p></div>
-                            <div className="databox"><h3>Pitch</h3><p>{formatNumber(displayData.pitch, 2)}°</p></div>
-                        </div>
-                        <div className="serial-panel">
-                            <Serial data={displayData} />
-                        </div>
-                    </div>
-                )}
-                {layout === "graficos" && (
-                    <div className="graficos_dashboard">
-                        <div className="left_panel">
-                            <ChartGrafico
-                                titulo="Velocidade"
-                                timestamps={timestamps}
-                                series={[
-                                    { label: "Velocidade", valores: velocidades, cor: "#a6e3a1" },
-                                ]}
-                            />
-                            <ChartGrafico
-                                titulo="RPM"
-                                timestamps={timestamps}
-                                series={[
-                                    { label: "RPM", valores: rpms, cor: "#f9e2af" },
-                                ]}
-                            />
-                            <div className="acceleration_charts">
-                            <ChartGrafico
-                                titulo="Temperatura do motor"
-                                timestamps={timestamps}
-                                series={[
-                                    { label: "Temp. Motor", valores: temps_motor, cor: "#f38ba8" },
-                                ]}
-                            />
-                            <ChartGrafico
-                                titulo="Temperatura da CVT"
-                                timestamps={timestamps}
-                                series={[
-                                    { label: "Temp. CVT", valores: temps_cvt, cor: "#fab387" },
-                                ]}
-                            />
-                            </div>
-                            <div className="acceleration_charts">
-                                <ChartGrafico
-                                    titulo="Aceleração X"
-                                    timestamps={timestamps}
-                                    series={[
-                                        { label: "Aceleração X", valores: acc_xs, cor: "#a28ba8" },
-                                    ]}
-                                />
-                                <ChartGrafico
-                                    titulo="Aceleração Y"
-                                    timestamps={timestamps}
-                                    series={[
-                                        { label: "Aceleração Y", valores: acc_ys, cor: "#a28ba8" },
-                                    ]}
-                                />
-                                <ChartGrafico
-                                    titulo="Aceleração Z"
-                                    timestamps={timestamps}
-                                    series={[
-                                        { label: "Aceleração Z", valores: acc_zs, cor: "#a28ba8" },
-                                    ]}
-                                />
-                            </div>
-                        </div>
-                        <div className="right_panel">
-                            <CarModel roll={displayData.roll} pitch={displayData.pitch} />
-                            <Bateria soc={displayData.soc} tensao={displayData.volt} corrente={displayData.current} />
-                        </div>
-                    </div>
-                )}
-            </main>
+// --- Helper Components ---
+const MapPanel = () => {
+    // NEW: Destructure startFinishLine from context
+    const { latestData, history, startFinishLine } = useTelemetryData();
+    if (!latestData) return <div className="waiting-text">Waiting for connection...</div>;
+    return(
+        <div style={{ height: '100%', padding: '10px' }}>
+            {/* NEW: Pass startFinishLine to Mapa */}
+            {Mapa(latestData.latitude, latestData.longitude, history.path, startFinishLine)}
         </div>
-    );
+    )
 }
+const CarTilt = () => {
+    const { latestData } = useTelemetryData();
+    if (!latestData) return <div className="waiting-text">Waiting for connection...</div>;
+    return(
+        <div style={{ height: '100%', padding: '10px' }}>
+            {CarModel(latestData.roll, latestData.pitch)}
+        </div>
+    )
+}
+
+// --- Register Components ---
+const components = {
+  map_panel: (_props: IDockviewPanelProps) => <MapPanel />,
+  car_panel: (_props: IDockviewPanelProps) => <LiveCarPanel />,
+  chart_panel: (props: IDockviewPanelProps) => <ChartPanel {...props} />,
+  carTilt_panel: (_props: IDockviewPanelProps) => <CarTilt/>,
+};
+
+// --- Layout Logic ---
+function loadDefaultLayout(api: DockviewApi) {
+    api.clear();
+
+    api.addPanel({
+        id: 'map_panel',
+        component: 'map_panel',
+        title: 'GPS Map',
+    });
+
+    api.addPanel({
+        id: 'car_panel',
+        component: 'car_panel',
+        title: 'Live Data',
+        position: { referencePanel: 'map_panel', direction: 'below' }
+    });
+
+    api.addPanel({
+        id: 'carTilt_panel',
+        component: 'carTilt_panel',
+        title: 'Car Tilt',
+        position: { referencePanel: 'car_panel', direction: 'right' }
+    });
+
+    api.addPanel({
+        id: 'speed_graph',
+        component: 'chart_panel',
+        title: 'Speed Graph',
+        position: { direction: 'right' },
+        params: { title: 'Velocity', dataKey: 'speeds', color: '#00FFFF' }
+    });
+
+    api.addPanel({
+        id: 'rpm_graph',
+        component: 'chart_panel',
+        title: 'RPM Graph',
+        position: { referencePanel: 'speed_graph', direction: 'below' },
+        params: { title: 'RPM', dataKey: 'rpms', color: '#50DAB5' }
+    });
+
+    api.addPanel({
+        id: 'accl_graph',
+        component: 'chart_panel',
+        title: 'ACC Graph',
+        position: { referencePanel: 'rpm_graph', direction: 'below' },
+        params: {
+            title: 'Accelerations',
+            lines: [
+                { dataKey: 'acc_x', label: 'Acc X', color: '#00ADB5' },
+                { dataKey: 'acc_y', label: 'Acc Y', color: '#FF5722' },
+                { dataKey: 'acc_z', label: 'Acc Z', color: '#FFC107' }
+            ]
+        }
+    });
+}
+
+const Dashboard = () => {
+  const [api, setApi] = useState<DockviewApi>();
+  const [serverIp, setServerIp] = useState<string>(""); 
+  const [inputIp, setInputIp] = useState("localhost");
+  const [viewMode, setViewMode] = useState<"time" | "dist">("time");
+  
+  const incomingData = useTelemetry(serverIp || null);
+
+  // --- Session & Lap Logic State ---
+  const [session, setSession] = useState({
+      lapCount: 0,
+      currentLapStart: 0,     
+      currentLapDuration: 0,  
+      lastLapTime: 0,
+      bestLapTime: 0,
+      startFinishLine: null as { lat: number, lon: number } | null,
+      isLapValid: false       
+  });
+
+  // Telemetry Context State
+  const [contextState, setContextState] = useState({
+      latestData: null as TelemetriaData | null,
+      history: {
+          timestamps: [] as number[],
+          speeds: [] as number[],
+          rpms: [] as number[],
+          temperatures_motor: [] as number[],
+          temperatures_cvt: [] as number[],
+          soc: [] as number[],
+          volt: [] as number[],
+          current: [] as number[],
+          acc_x: [] as number[],
+          acc_y: [] as number[],
+          acc_z: [] as number[],
+          dps_x: [] as number[],
+          dps_y: [] as number[],
+          dps_z: [] as number[],
+          roll: [] as number[],
+          pitch: [] as number[],
+          latitude: [] as number[],
+          longitude: [] as number[],
+          path: [] as [number, number][],
+      },
+      connectedIp: null as string | null,
+      // We will merge startFinishLine here in the Provider below
+  });
+
+  // --- 1. Automatic Lap Timer Logic ---
+  useEffect(() => {
+    if (!incomingData) return;
+
+    const now = Date.now();
+    const lat = incomingData.latitude;
+    const lon = incomingData.longitude;
+
+    setSession(prev => {
+        let newState = { ...prev };
+
+        if (newState.currentLapStart === 0) {
+            newState.currentLapStart = now;
+        }
+
+        newState.currentLapDuration = now - newState.currentLapStart;
+
+        // CHECK LAP TRIGGER
+        if (newState.startFinishLine && lat !== 0 && lon !== 0) {
+            const dist = getDistanceFromLatLonInM(lat, lon, newState.startFinishLine.lat, newState.startFinishLine.lon);
+            
+            // INCREASE THIS TO MAKE DETECTION RADIUS BIGGER
+            if (dist < 25 && newState.currentLapDuration > 10000) {
+                const lapTime = newState.currentLapDuration;
+                
+                newState.lapCount += 1;
+                newState.lastLapTime = lapTime;
+                
+                if (newState.bestLapTime === 0 || lapTime < newState.bestLapTime) {
+                    newState.bestLapTime = lapTime;
+                }
+
+                newState.currentLapStart = now;
+                newState.currentLapDuration = 0;
+            }
+        }
+
+        return newState;
+    });
+
+  }, [incomingData]); 
+
+  // Manual Trigger: Set Start/Finish Line
+  const handleSetSF = () => {
+      if (contextState.latestData) {
+          setSession(prev => ({
+              ...prev,
+              startFinishLine: { 
+                  lat: contextState.latestData!.latitude, 
+                  lon: contextState.latestData!.longitude 
+              }
+          }));
+      }
+  };
+
+  // --- 2. Data Accumulation ---
+  useEffect(() => {
+      if (incomingData) {
+          setContextState(prev => {
+              const MAX_POINTS = 300; 
+              const MAX_PATH_POINTS = 500; 
+
+              const updateArr = (arr: number[], val: number) => {
+                  const newArr = [...arr, val];
+                  if (newArr.length > MAX_POINTS) newArr.shift();
+                  return newArr;
+              };
+
+              const updatePath = (currentPath: [number, number][], lat: number, lon: number) => {
+                  const newPoint: [number, number] = [lat, lon];
+                  const newPath = [...currentPath, newPoint];
+                  if (newPath.length > MAX_PATH_POINTS) newPath.shift(); 
+                  return newPath;
+              };
+
+              let safeTimestamp = Date.now();
+              if (typeof incomingData.timestamp === 'number') {
+                  safeTimestamp = incomingData.timestamp;
+              }
+
+              return {
+                  latestData: incomingData,
+                  connectedIp: serverIp,
+                  history: {
+                      timestamps: updateArr(prev.history.timestamps, safeTimestamp),
+                      speeds: updateArr(prev.history.speeds, incomingData.speed),
+                      rpms: updateArr(prev.history.rpms, incomingData.rpm),
+                      temperatures_motor: updateArr(prev.history.temperatures_motor, incomingData.temperature),
+                      temperatures_cvt: updateArr(prev.history.temperatures_cvt, incomingData.temp_cvt),
+                      soc: updateArr(prev.history.soc, incomingData.soc),
+                      volt: updateArr(prev.history.volt, incomingData.volt),
+                      current: updateArr(prev.history.current, incomingData.current),
+                      acc_x: updateArr(prev.history.acc_x, incomingData.acc_x),
+                      acc_y: updateArr(prev.history.acc_y, incomingData.acc_y),
+                      acc_z: updateArr(prev.history.acc_z, incomingData.acc_z),
+                      dps_x: updateArr(prev.history.dps_x, incomingData.dps_x),
+                      dps_y: updateArr(prev.history.dps_y, incomingData.dps_y),
+                      dps_z: updateArr(prev.history.dps_z, incomingData.dps_z),
+                      roll: updateArr(prev.history.roll, incomingData.roll),
+                      pitch: updateArr(prev.history.pitch, incomingData.pitch),
+                      latitude: updateArr(prev.history.latitude, incomingData.latitude),
+                      longitude: updateArr(prev.history.longitude, incomingData.longitude),
+                      path: updatePath(prev.history.path, incomingData.latitude, incomingData.longitude) 
+                  }
+              };
+          });
+      }
+  }, [incomingData, serverIp]);
+
+  const onReady = (event: DockviewReadyEvent) => {
+    setApi(event.api);
+    loadDefaultLayout(event.api);
+  };
+
+  const handleResetLayout = () => { if (api) loadDefaultLayout(api); };
+
+  return (
+    <div className="app-container">
+      {/* HEADER BAR */}
+      <div className="connection-bar">
+         <div className="app-logo">
+            <span style={{color: 'var(--accent-cyan)'}}>MANGUE</span>
+            <span style={{color: '#fff', fontWeight: 'lighter'}}>TELEMETRY</span>
+         </div>
+
+         <div className="divider-v"></div>
+
+         <div className="toolbar-group">
+            <div className="input-group">
+                <span className="input-label">HOST</span>
+                <input 
+                    className="connection-input"
+                    value={inputIp} 
+                    onChange={(e) => setInputIp(e.target.value)}
+                    placeholder="127.0.0.1"
+                />
+            </div>
+            <button 
+                className={`btn-tech ${serverIp ? 'disconnect' : 'connect'}`}
+                onClick={() => setServerIp(inputIp)}
+            >
+                {serverIp ? "STOP" : "LINK"}
+            </button>
+            
+            <button 
+                className="btn-tech"
+                onClick={handleSetSF}
+                title="Set Start/Finish Line at current location"
+                style={{borderColor: session.startFinishLine ? 'var(--accent-green)' : '#444'}}
+            >
+                {session.startFinishLine ? "S/F SET" : "SET S/F"}
+            </button>
+         </div>
+
+         <div className="divider-v"></div>
+
+         <div className="toolbar-group">
+            <div className="mode-toggle">
+                <div 
+                    className={`mode-option ${viewMode === 'time' ? 'active' : ''}`}
+                    onClick={() => setViewMode('time')}
+                >TIME</div>
+                <div 
+                    className={`mode-option ${viewMode === 'dist' ? 'active' : ''}`}
+                    onClick={() => setViewMode('dist')}
+                >DIST</div>
+            </div>
+            <button className="btn-tech" onClick={handleResetLayout}>RESET UI</button>
+         </div>
+
+         <div className="divider-v"></div>
+
+         <div className="session-info">
+             <div className="info-block">
+                 <span className="info-label">LAP</span>
+                 <span className="info-value" style={{color: 'var(--accent-cyan)'}}>
+                    {session.lapCount.toString().padStart(2, '0')}
+                 </span>
+             </div>
+             <div className="info-block">
+                 <span className="info-label">CURRENT</span>
+                 <span className="info-value time">
+                    {formatLapTime(session.currentLapDuration)}
+                 </span>
+             </div>
+             <div className="info-block mobile-hide">
+                 <span className="info-label">LAST</span>
+                 <span className="info-value">
+                    {formatLapTime(session.lastLapTime)}
+                 </span>
+             </div>
+             <div className="info-block mobile-hide">
+                 <span className="info-label">BEST</span>
+                 <span className="info-value" style={{color: 'var(--accent-green)'}}>
+                    {formatLapTime(session.bestLapTime)}
+                 </span>
+             </div>
+         </div>
+
+         <span className={`connection-status ${incomingData ? 'status-connected' : 'status-disconnected'}`}>
+            {incomingData ? "● LIVE STREAM" : "○ OFFLINE"}
+         </span>
+      </div>
+
+      <div style={{ flexGrow: 1, overflow: 'hidden' }}>
+        {/* MERGE startFinishLine into context here */}
+        <TelemetryProvider value={{ ...contextState, startFinishLine: session.startFinishLine }}>
+            <DockviewReact components={components} onReady={onReady} className="dockview-theme-dark" />
+        </TelemetryProvider>
+      </div>
+    </div>
+  );
+};
+
+export default Dashboard;

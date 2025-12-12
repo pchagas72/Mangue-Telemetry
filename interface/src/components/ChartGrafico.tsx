@@ -22,34 +22,85 @@ export function ChartGrafico({ titulo, timestamps, series }: ChartMultivariavelP
   ];
 
   useEffect(() => {
-    if (!chartRef.current || uplotRef.current) return;
+    if (!chartRef.current) return;
+
+    const initWidth = chartRef.current.clientWidth;
+    const initHeight = chartRef.current.clientHeight;
 
     const opts: uPlot.Options = {
-      title: titulo,
-      width: chartRef.current.clientWidth,
-      height: 200,
+      title: "", 
+      width: initWidth,
+      height: initHeight,
       series: [
-        {},
+        {
+          label: "Time",
+          // Safety Check: if 'v' isn't a valid timestamp, just show it as a number
+          value: (_u, v) => {
+              if (v == null) return "--";
+              const d = new Date(v);
+              // If invalid date OR small number (likely relative seconds, < 1973), format as float
+              if (isNaN(d.getTime()) || v < 100000000000) return v.toFixed(2) + "s";
+              return d.toLocaleTimeString('en-US', { hour12: false });
+          },
+        },
         ...series.map((s) => ({
           label: s.label,
           stroke: s.cor || "#00ADB5",
+          width: 2,
+          points: { show: false }, 
         })),
       ],
-      axes: [{}, { stroke: "#cdd6f4" }],
+      axes: [
+        {
+          label: "TIME",
+          labelSize: 20,
+          labelFont: "10px 'Consolas'",
+          grid: { show: true, stroke: "#222", width: 1 },
+          stroke: "#888",
+          font: "10px 'Consolas'",
+          gap: 5,
+          // Safety Check for Axis Ticks
+          values: (_u, vals) => vals.map(v => {
+              const d = new Date(v);
+              // Fallback to number formatting if date is invalid or looks like relative seconds
+              if (isNaN(d.getTime()) || v < 100000000000) return v.toFixed(1);
+              return d.toLocaleTimeString('en-US', { hour12: false, hour: "2-digit", minute:"2-digit", second:"2-digit" });
+          }),
+        },
+        {
+          label: titulo.toUpperCase(),
+          labelSize: 20,
+          labelFont: "10px 'Consolas'",
+          grid: { show: true, stroke: "#222", width: 1 },
+          stroke: "#888",
+          font: "10px 'Consolas'",
+          gap: 5,
+        }
+      ],
+      cursor: {
+          drag: { x: true, y: true },
+          points: { show: false },
+      },
+      legend: {
+          show: true,
+      }
     };
 
     uplotRef.current = new uPlot(opts, data as uPlot.AlignedData, chartRef.current);
 
-    const resize = () => {
-      uplotRef.current?.setSize({
-        width: chartRef.current!.clientWidth,
-        height: 200,
-      });
-    };
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        if (uplotRef.current) {
+          const { width, height } = entry.contentRect;
+          uplotRef.current.setSize({ width, height });
+        }
+      }
+    });
 
-    window.addEventListener("resize", resize);
+    observer.observe(chartRef.current);
+
     return () => {
-      window.removeEventListener("resize", resize);
+      observer.disconnect();
       uplotRef.current?.destroy();
       uplotRef.current = null;
     };
@@ -57,23 +108,11 @@ export function ChartGrafico({ titulo, timestamps, series }: ChartMultivariavelP
 
   useEffect(() => {
     uplotRef.current?.setData(data as uPlot.AlignedData);
-  }, [timestamps, series.map((s) => s.valores)]);
+  }, [timestamps, series]);
 
   return (
     <div className="grafico_multivariavel">
-      <div ref={chartRef} style={{ height: "200px", overflow: "hidden" }} />
-      <div className="chart_legend">
-        {series.map((s, index) => (
-          <div key={index} className="chart_legend_item">
-            <span
-              className="chart_legend_color"
-              style={{ backgroundColor: s.cor || "#00ADB5" }}
-            />
-            <span>{s.label}</span>
-          </div>
-        ))}
-      </div>
+      <div ref={chartRef} style={{ width: "100%", height: "100%", minHeight: "0" }} />
     </div>
   );
 }
-
