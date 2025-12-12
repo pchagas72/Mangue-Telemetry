@@ -1,6 +1,6 @@
 // src/pages/Dashboard.tsx
 import _React, { useEffect, useState } from "react";
-import { DockviewReact, DockviewApi } from "dockview";
+import { DockviewReact, DockviewApi} from "dockview";
 import type { IDockviewPanelProps } from "dockview";
 import type { DockviewReadyEvent } from "dockview";
 import "dockview/dist/styles/dockview.css";
@@ -14,6 +14,7 @@ import type { TelemetriaData } from "../types/TelemetriaData";
 import { Mapa } from "../components/Mapa";
 import { CarModel } from "../components/CarModel";
 import { LiveCarPanel } from "../components/LiveCarPanel";
+import { GGDiagram } from "../components/CGDiagram";
 
 // --- Helpers ---
 function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -42,12 +43,10 @@ const formatLapTime = (ms: number) => {
 
 // --- Helper Components ---
 const MapPanel = () => {
-    // NEW: Destructure startFinishLine from context
     const { latestData, history, startFinishLine } = useTelemetryData();
     if (!latestData) return <div className="waiting-text">Waiting for connection...</div>;
     return(
         <div style={{ height: '100%', padding: '10px' }}>
-            {/* NEW: Pass startFinishLine to Mapa */}
             {Mapa(latestData.latitude, latestData.longitude, history.path, startFinishLine)}
         </div>
     )
@@ -68,6 +67,7 @@ const components = {
   car_panel: (_props: IDockviewPanelProps) => <LiveCarPanel />,
   chart_panel: (props: IDockviewPanelProps) => <ChartPanel {...props} />,
   carTilt_panel: (_props: IDockviewPanelProps) => <CarTilt/>,
+  gg_panel: (_props: IDockviewPanelProps) => <GGDiagram />, // NEW REGISTER
 };
 
 // --- Layout Logic ---
@@ -80,18 +80,12 @@ function loadDefaultLayout(api: DockviewApi) {
         title: 'GPS Map',
     });
 
-    api.addPanel({
-        id: 'car_panel',
-        component: 'car_panel',
-        title: 'Live Data',
-        position: { referencePanel: 'map_panel', direction: 'below' }
-    });
-
+    // Added G-G Diagram to the right of Live Data
     api.addPanel({
         id: 'carTilt_panel',
         component: 'carTilt_panel',
-        title: 'Car Tilt',
-        position: { referencePanel: 'car_panel', direction: 'right' }
+        title: 'Car Tilt Panel',
+        position: { referencePanel: 'map_panel',direction: 'below' }
     });
 
     api.addPanel({
@@ -111,19 +105,20 @@ function loadDefaultLayout(api: DockviewApi) {
     });
 
     api.addPanel({
-        id: 'accl_graph',
-        component: 'chart_panel',
-        title: 'ACC Graph',
-        position: { referencePanel: 'rpm_graph', direction: 'below' },
-        params: {
-            title: 'Accelerations',
-            lines: [
-                { dataKey: 'acc_x', label: 'Acc X', color: '#00ADB5' },
-                { dataKey: 'acc_y', label: 'Acc Y', color: '#FF5722' },
-                { dataKey: 'acc_z', label: 'Acc Z', color: '#FFC107' }
-            ]
-        }
+        id: 'car_panel',
+        component: 'car_panel',
+        title: 'Live Data',
+        position: { direction: 'right' }
     });
+
+    // Added G-G Diagram to the right of Live Data
+    api.addPanel({
+        id: 'gg_panel',
+        component: 'gg_panel',
+        title: 'G-G Diagram',
+        position: { referencePanel: 'car_panel',direction: 'below' }
+    });
+
 }
 
 const Dashboard = () => {
@@ -134,7 +129,6 @@ const Dashboard = () => {
   
   const incomingData = useTelemetry(serverIp || null);
 
-  // --- Session & Lap Logic State ---
   const [session, setSession] = useState({
       lapCount: 0,
       currentLapStart: 0,     
@@ -145,7 +139,6 @@ const Dashboard = () => {
       isLapValid: false       
   });
 
-  // Telemetry Context State
   const [contextState, setContextState] = useState({
       latestData: null as TelemetriaData | null,
       history: {
@@ -170,52 +163,38 @@ const Dashboard = () => {
           path: [] as [number, number][],
       },
       connectedIp: null as string | null,
-      // We will merge startFinishLine here in the Provider below
   });
 
-  // --- 1. Automatic Lap Timer Logic ---
   useEffect(() => {
     if (!incomingData) return;
-
     const now = Date.now();
     const lat = incomingData.latitude;
     const lon = incomingData.longitude;
 
     setSession(prev => {
         let newState = { ...prev };
-
-        if (newState.currentLapStart === 0) {
-            newState.currentLapStart = now;
-        }
-
+        if (newState.currentLapStart === 0) newState.currentLapStart = now;
         newState.currentLapDuration = now - newState.currentLapStart;
 
-        // CHECK LAP TRIGGER
         if (newState.startFinishLine && lat !== 0 && lon !== 0) {
             const dist = getDistanceFromLatLonInM(lat, lon, newState.startFinishLine.lat, newState.startFinishLine.lon);
-            
-            // INCREASE THIS TO MAKE DETECTION RADIUS BIGGER
+            // Increased radius to 25m as discussed
             if (dist < 25 && newState.currentLapDuration > 10000) {
                 const lapTime = newState.currentLapDuration;
-                
                 newState.lapCount += 1;
                 newState.lastLapTime = lapTime;
-                
                 if (newState.bestLapTime === 0 || lapTime < newState.bestLapTime) {
                     newState.bestLapTime = lapTime;
                 }
-
                 newState.currentLapStart = now;
                 newState.currentLapDuration = 0;
             }
         }
-
         return newState;
     });
 
   }, [incomingData]); 
 
-  // Manual Trigger: Set Start/Finish Line
   const handleSetSF = () => {
       if (contextState.latestData) {
           setSession(prev => ({
@@ -228,7 +207,6 @@ const Dashboard = () => {
       }
   };
 
-  // --- 2. Data Accumulation ---
   useEffect(() => {
       if (incomingData) {
           setContextState(prev => {
@@ -291,15 +269,12 @@ const Dashboard = () => {
 
   return (
     <div className="app-container">
-      {/* HEADER BAR */}
       <div className="connection-bar">
          <div className="app-logo">
             <span style={{color: 'var(--accent-cyan)'}}>MANGUE</span>
             <span style={{color: '#fff', fontWeight: 'lighter'}}>TELEMETRY</span>
          </div>
-
          <div className="divider-v"></div>
-
          <div className="toolbar-group">
             <div className="input-group">
                 <span className="input-label">HOST</span>
@@ -316,19 +291,16 @@ const Dashboard = () => {
             >
                 {serverIp ? "STOP" : "LINK"}
             </button>
-            
             <button 
                 className="btn-tech"
                 onClick={handleSetSF}
-                title="Set Start/Finish Line at current location"
+                title="Set Start/Finish Line"
                 style={{borderColor: session.startFinishLine ? 'var(--accent-green)' : '#444'}}
             >
                 {session.startFinishLine ? "S/F SET" : "SET S/F"}
             </button>
          </div>
-
          <div className="divider-v"></div>
-
          <div className="toolbar-group">
             <div className="mode-toggle">
                 <div 
@@ -342,9 +314,7 @@ const Dashboard = () => {
             </div>
             <button className="btn-tech" onClick={handleResetLayout}>RESET UI</button>
          </div>
-
          <div className="divider-v"></div>
-
          <div className="session-info">
              <div className="info-block">
                  <span className="info-label">LAP</span>
@@ -371,14 +341,12 @@ const Dashboard = () => {
                  </span>
              </div>
          </div>
-
          <span className={`connection-status ${incomingData ? 'status-connected' : 'status-disconnected'}`}>
             {incomingData ? "● LIVE STREAM" : "○ OFFLINE"}
          </span>
       </div>
 
       <div style={{ flexGrow: 1, overflow: 'hidden' }}>
-        {/* MERGE startFinishLine into context here */}
         <TelemetryProvider value={{ ...contextState, startFinishLine: session.startFinishLine }}>
             <DockviewReact components={components} onReady={onReady} className="dockview-theme-dark" />
         </TelemetryProvider>

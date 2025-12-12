@@ -251,7 +251,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Sent packet " << counter << " (Speed: " << packet_to_send.speed << " km/h)" << std::endl;
 
         counter++;
-        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        std::this_thread::sleep_for(std::chrono::milliseconds(550));
     }
 
     serial.close();
