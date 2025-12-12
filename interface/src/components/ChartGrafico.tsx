@@ -1,4 +1,5 @@
-import { useEffect, useRef } from "react";
+// src/components/ChartGrafico.tsx
+import { useEffect, useRef, useMemo } from "react";
 import uPlot from "uplot";
 import "uplot/dist/uPlot.min.css";
 
@@ -10,70 +11,90 @@ interface ChartMultivariavelProps {
     valores: number[];
     cor?: string;
   }[];
+  xAxisLabel?: string;
+  isScatter?: boolean;
 }
 
-export function ChartGrafico({ titulo, timestamps, series }: ChartMultivariavelProps) {
+export function ChartGrafico({ 
+    titulo, 
+    timestamps, 
+    series, 
+    xAxisLabel = "TIME", 
+    isScatter = false 
+}: ChartMultivariavelProps) {
+  
   const chartRef = useRef<HTMLDivElement>(null);
   const uplotRef = useRef<uPlot | null>(null);
 
-  const data: (number[] | undefined)[] = [
-    timestamps,
-    ...series.map((s) => s.valores),
-  ];
+  const data = useMemo(() => {
+    return [
+      timestamps,
+      ...series.map((s) => s.valores),
+    ] as uPlot.AlignedData;
+  }, [timestamps, series]);
 
   useEffect(() => {
     if (!chartRef.current) return;
+
+    if (uplotRef.current) {
+      uplotRef.current.destroy();
+    }
 
     const initWidth = chartRef.current.clientWidth;
     const initHeight = chartRef.current.clientHeight;
 
     const opts: uPlot.Options = {
-      title: "", 
+      title: "",
       width: initWidth,
       height: initHeight,
       series: [
         {
-          label: "Time",
-          // Safety Check: if 'v' isn't a valid timestamp, just show it as a number
+          label: xAxisLabel,
           value: (_u, v) => {
               if (v == null) return "--";
-              const d = new Date(v);
-              // If invalid date OR small number (likely relative seconds, < 1973), format as float
-              if (isNaN(d.getTime()) || v < 100000000000) return v.toFixed(2) + "s";
-              return d.toLocaleTimeString('en-US', { hour12: false });
+              
+              if (isScatter) return v.toFixed(2);
+
+              if (v > 100000000000) {
+                 const d = new Date(v);
+                 return d.toLocaleTimeString('en-US', { hour12: false });
+              }
+              return v.toFixed(2) + "s";
           },
         },
         ...series.map((s) => ({
           label: s.label,
           stroke: s.cor || "#00ADB5",
           width: 2,
-          points: { show: false }, 
+          points: { show: false },
         })),
       ],
       axes: [
         {
-          label: "TIME",
+          label: xAxisLabel,
           labelSize: 20,
-          labelFont: "10px 'Consolas'",
-          grid: { show: true, stroke: "#222", width: 1 },
+          labelFont: "12px 'Consolas', monospace",
+          font: "10px 'Consolas', monospace",
+          grid: { show: true, stroke: "#333", width: 1 },
           stroke: "#888",
-          font: "10px 'Consolas'",
           gap: 5,
-          // Safety Check for Axis Ticks
           values: (_u, vals) => vals.map(v => {
-              const d = new Date(v);
-              // Fallback to number formatting if date is invalid or looks like relative seconds
-              if (isNaN(d.getTime()) || v < 100000000000) return v.toFixed(1);
-              return d.toLocaleTimeString('en-US', { hour12: false, hour: "2-digit", minute:"2-digit", second:"2-digit" });
+              if (isScatter) return v >= 1000 ? (v/1000).toFixed(1) + "k" : v.toFixed(0);
+              
+              if (v > 100000000000) {
+                  return new Date(v).toLocaleTimeString('en-US', { hour12: false, hour: "2-digit", minute:"2-digit", second:"2-digit" });
+              }
+              return v.toFixed(1);
           }),
         },
         {
+          // Y-Axis Visuals
           label: titulo.toUpperCase(),
           labelSize: 20,
-          labelFont: "10px 'Consolas'",
-          grid: { show: true, stroke: "#222", width: 1 },
+          labelFont: "12px 'Consolas', monospace",
+          font: "10px 'Consolas', monospace",
+          grid: { show: true, stroke: "#333", width: 1 },
           stroke: "#888",
-          font: "10px 'Consolas'",
           gap: 5,
         }
       ],
@@ -83,10 +104,11 @@ export function ChartGrafico({ titulo, timestamps, series }: ChartMultivariavelP
       },
       legend: {
           show: true,
-      }
+      },
     };
 
-    uplotRef.current = new uPlot(opts, data as uPlot.AlignedData, chartRef.current);
+    const u = new uPlot(opts, data, chartRef.current);
+    uplotRef.current = u;
 
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
@@ -96,23 +118,25 @@ export function ChartGrafico({ titulo, timestamps, series }: ChartMultivariavelP
         }
       }
     });
-
     observer.observe(chartRef.current);
 
     return () => {
       observer.disconnect();
-      uplotRef.current?.destroy();
+      u.destroy();
       uplotRef.current = null;
     };
-  }, []);
+    
+  }, [xAxisLabel, isScatter, titulo, series.length, series.map(s => s.label).join(',')]); 
 
   useEffect(() => {
-    uplotRef.current?.setData(data as uPlot.AlignedData);
-  }, [timestamps, series]);
+    if (uplotRef.current) {
+        uplotRef.current.setData(data);
+    }
+  }, [data]);
 
   return (
-    <div className="grafico_multivariavel">
-      <div ref={chartRef} style={{ width: "100%", height: "100%", minHeight: "0" }} />
+    <div className="grafico_multivariavel" style={{ width: "100%", height: "100%" }}>
+      <div ref={chartRef} style={{ width: "100%", height: "100%" }} />
     </div>
   );
 }

@@ -24,7 +24,7 @@ class DataParser:
 
         raw = struct.unpack(self.payload_fmt, payload)
 
-        # These conversion formulas should match the firmware or sensor datasheets.
+        # These conversion formulas should match the firmware and sensor datasheets.
         processed_data = {
             "volt": raw[0],
             "soc": raw[1],
@@ -51,5 +51,4 @@ class DataParser:
             "longitude": raw[17],
             "timestamp": raw[18],
         }
-        print(processed_data)
         return processed_data

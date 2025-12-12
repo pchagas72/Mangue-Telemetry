@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     # Server serttings
     # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "serial"
     data_source: Literal["serial", "mqtt", "simulator"] = "serial"
-    broadcast_delay_seconds: float = 0.5
+    broadcast_delay_seconds: float = 0.05
 
     # MQTT Broker Settings
     mqtt_hostname: str = ""

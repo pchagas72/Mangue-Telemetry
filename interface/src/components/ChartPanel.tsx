@@ -23,7 +23,7 @@ export const ChartPanel = (props: IDockviewPanelProps) => {
     const dataKey = props.params.dataKey as string;
     const color = props.params.color as string || MOTEC_COLORS.cyan;
     
-    // New Param: Custom X-Axis Key
+    // Custom X-Axis Key
     const xAxisKey = props.params.xAxisKey as string; // e.g., 'rpms' or 'speeds'
     const xAxisLabel = props.params.xAxisLabel as string; // e.g., 'RPM'
 
@@ -31,21 +31,19 @@ export const ChartPanel = (props: IDockviewPanelProps) => {
     let seriesData: { label: string, valores: number[], cor: string }[] = [];
     let isScatter = false;
 
-    // 1. Determine Y-Axis Data
+    // Determine Y-Axis Data
     let yDefinitions = lines;
     if (!yDefinitions && dataKey) {
         yDefinitions = [{ dataKey, label: title, color }];
     }
     if (!yDefinitions) yDefinitions = [];
 
-    // 2. Handle Custom X-Axis (XY Plot Logic)
+    // Handle Custom X-Axis
     if (xAxisKey && xAxisKey !== 'timestamps' && (history as any)[xAxisKey]) {
         isScatter = true; // Custom X usually implies scatter/correlation
         
         const rawX = (history as any)[xAxisKey] as number[];
         
-        // We must sort by X for uPlot to render correctly
-        // Create a zipped array: [ [x1, y1a, y1b...], [x2, y2a, y2b...] ]
         const combined = rawX.map((xVal, i) => {
             const yVals = yDefinitions.map(def => ((history as any)[def.dataKey] || [])[i] || 0);
             return { x: xVal, ys: yVals };

@@ -1,6 +1,6 @@
 // src/pages/Dashboard.tsx
 import _React, { useEffect, useState } from "react";
-import { DockviewReact, DockviewApi} from "dockview";
+import { DockviewReact, DockviewApi } from "dockview";
 import type { IDockviewPanelProps } from "dockview";
 import type { DockviewReadyEvent } from "dockview";
 import "dockview/dist/styles/dockview.css";
@@ -14,8 +14,6 @@ import { Mapa } from "../components/Mapa";
 import { CarModel } from "../components/CarModel";
 import { LiveCarPanel } from "../components/LiveCarPanel";
 import { GGDiagram } from "../components/CGDiagram";
-
-const SF_RADIUS = 10;
 
 // Definitions for available channels and colors
 const AVAILABLE_CHANNELS = [
@@ -37,48 +35,32 @@ const AVAILABLE_CHANNELS = [
 const GRAPH_COLORS = ['#00FFFF', '#FF00FF', '#FFFF00', '#00FF00', '#FF3333', '#FFA500'];
 
 // Helper functions
-function getDistanceFromLatLonInM(lat1: number, lon1: number, lat2: number, lon2: number) {
-    var R = 6371; 
-    var dLat = deg2rad(lat2 - lat1);
-    var dLon = deg2rad(lon2 - lon1);
-    var a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) * Math.sin(dLon / 2);
-    var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    var d = R * c; 
-    return d * 1000; 
-}
-
-function deg2rad(deg: number) {
-    return deg * (Math.PI / 180);
-}
-
 const formatLapTime = (ms: number) => {
+    if (!ms) return "0:00.00";
     const min = Math.floor(ms / 60000);
     const sec = Math.floor((ms % 60000) / 1000);
-    const mil = Math.floor((ms % 1000) / 10); 
+    const mil = Math.floor((ms % 1000) / 10);
     return `${min}:${sec.toString().padStart(2, '0')}.${mil.toString().padStart(2, '0')}`;
 };
 
-// Components
+// --- Components ---
 
-// Simple Modal Component
-const AddGraphModal = ({ 
-    isOpen, 
-    onClose, 
-    onAdd 
-}: { 
-    isOpen: boolean; 
-    onClose: () => void; 
-    onAdd: (selectedKeys: string[]) => void; 
+// General graph component
+const AddGraphModal = ({
+    isOpen,
+    onClose,
+    onAdd
+}: {
+    isOpen: boolean;
+    onClose: () => void;
+    onAdd: (selectedKeys: string[]) => void;
 }) => {
     const [selected, setSelected] = useState<string[]>([]);
 
     if (!isOpen) return null;
 
     const toggleSelection = (key: string) => {
-        setSelected(prev => 
+        setSelected(prev =>
             prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]
         );
     };
@@ -100,8 +82,8 @@ const AddGraphModal = ({
                 }}>
                     {AVAILABLE_CHANNELS.map(ch => (
                         <label key={ch.key} style={{ display: 'flex', alignItems: 'center', color: '#ccc', fontSize: '12px', cursor: 'pointer' }}>
-                            <input 
-                                type="checkbox" 
+                            <input
+                                type="checkbox"
                                 checked={selected.includes(ch.key)}
                                 onChange={() => toggleSelection(ch.key)}
                                 style={{ marginRight: '8px' }}
@@ -112,8 +94,8 @@ const AddGraphModal = ({
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                     <button className="btn-tech" onClick={onClose}>CANCEL</button>
-                    <button 
-                        className="btn-tech" 
+                    <button
+                        className="btn-tech"
                         style={{ borderColor: 'var(--accent-green)', color: 'var(--accent-green)' }}
                         onClick={() => { onAdd(selected); setSelected([]); onClose(); }}
                     >
@@ -124,426 +106,408 @@ const AddGraphModal = ({
         </div>
     );
 };
+
+// Logic is processed on the backend
 const MapPanel = () => {
     const { latestData, history, startFinishLine } = useTelemetryData();
     if (!latestData) return <div className="waiting-text">Waiting for connection...</div>;
-    return(
+    return (
         <div style={{ height: '100%', padding: '10px' }}>
-        {Mapa(latestData.latitude, latestData.longitude, history.path, startFinishLine, SF_RADIUS)}
+            {Mapa(latestData.latitude, latestData.longitude, history.path, startFinishLine, 10)}
         </div>
     )
 }
+
 const CarTilt = () => {
     const { latestData } = useTelemetryData();
     if (!latestData) return <div className="waiting-text">Waiting for connection...</div>;
-    return(
+    return (
         <div style={{ height: '100%', padding: '10px' }}>
-        {CarModel(latestData.roll, latestData.pitch)}
+            {CarModel(latestData.roll, latestData.pitch)}
         </div>
     )
 }
 
 // Registering Components for dockview
 const components = {
-    map_panel: (_props: IDockviewPanelProps) => <MapPanel/>,
-        car_panel: (_props: IDockviewPanelProps) => <LiveCarPanel />,
-        chart_panel: (props: IDockviewPanelProps) => <ChartPanel {...props} />,
-        carTilt_panel: (_props: IDockviewPanelProps) => <CarTilt/>,
-        gg_panel: (_props: IDockviewPanelProps) => <GGDiagram />, // NEW REGISTER
+    map_panel: (_props: IDockviewPanelProps) => <MapPanel />,
+    car_panel: (_props: IDockviewPanelProps) => <LiveCarPanel />,
+    chart_panel: (props: IDockviewPanelProps) => <ChartPanel {...props} />,
+    carTilt_panel: (_props: IDockviewPanelProps) => <CarTilt />,
+    gg_panel: (_props: IDockviewPanelProps) => <GGDiagram />,
 };
 
-    // Layout setup
-    function loadDefaultLayout(api: DockviewApi) {
-        api.clear();
+// Layout setup
+function loadDefaultLayout(api: DockviewApi) {
+    api.clear();
 
-        // Lat/Lon/path
-        api.addPanel({
-            id: 'map_panel',
-            component: 'map_panel',
-            title: 'GPS Map',
-        });
+    // Lat/Lon/path
+    api.addPanel({
+        id: 'map_panel',
+        component: 'map_panel',
+        title: 'GPS Map',
+    });
 
-        // Gyroscope
-        api.addPanel({
-            id: 'carTilt_panel',
-            component: 'carTilt_panel',
-            title: 'Car Tilt Panel',
-            position: { referencePanel: 'map_panel',direction: 'below' }
-        });
+    // Gyroscope
+    api.addPanel({
+        id: 'carTilt_panel',
+        component: 'carTilt_panel',
+        title: 'Car Tilt Panel',
+        position: { referencePanel: 'map_panel', direction: 'below' }
+    });
 
-        // Speed
-        api.addPanel({
-            id: 'speed_graph',
-            component: 'chart_panel',
-            title: 'Speed Graph',
-            position: { direction: 'right' },
-            params: { title: 'Velocity', dataKey: 'speeds', color: '#00FFFF' }
-        });
+    // Speed
+    api.addPanel({
+        id: 'speed_graph',
+        component: 'chart_panel',
+        title: 'Speed Graph',
+        position: { direction: 'right' },
+        params: { title: 'Velocity', dataKey: 'speeds', color: '#00FFFF' }
+    });
 
-        // RPM
-        api.addPanel({
-            id: 'rpm_graph',
-            component: 'chart_panel',
-            title: 'RPM Graph',
-            position: { referencePanel: 'speed_graph', direction: 'within' },
-            params: { title: 'RPM', dataKey: 'rpms', color: '#50DAB5' }
-        });
+    // RPM
+    api.addPanel({
+        id: 'rpm_graph',
+        component: 'chart_panel',
+        title: 'RPM Graph',
+        position: { referencePanel: 'speed_graph', direction: 'within' },
+        params: { title: 'RPM', dataKey: 'rpms', color: '#50DAB5' }
+    });
 
-        api.addPanel({
-            id: 'acc_graph',
-            component: 'chart_panel',
-            title: 'Acceleration Monitor',
-            position: { referencePanel: 'speed_graph', direction: 'within' },
-            params: {
-                title: 'ACC\'s',
-                lines: [
-                    { 
-                        dataKey: 'acc_x', // Must match variable name in TelemetryContext history
-                        label: 'X axis', 
-                        color: '#FF3333' 
-                    },
-                    { 
-                        dataKey: 'acc_y', 
-                        label: 'Y axis', 
-                        color: '#50BAD5' 
-                    },
-                    { 
-                        dataKey: 'acc_z', 
-                        label: 'Z axis', 
-                        color: '#FFA500' 
-                    }
-                ]
-            }
-        });
+    api.addPanel({
+        id: 'temp_combined_graph',
+        component: 'chart_panel',
+        title: 'Temperature Monitor',
+        position: { referencePanel: 'speed_graph', direction: 'within' },
+        params: {
+            title: 'System Temperatures',
+            lines: [
+                { dataKey: 'temperatures_motor', label: 'Motor', color: '#FF3333' },
+                { dataKey: 'temperatures_cvt', label: 'CVT', color: '#FFA500' }
+            ]
+        }
+    });
 
-        api.addPanel({
-            id: 'temp_combined_graph',
-            component: 'chart_panel',
-            title: 'Temperature Monitor',
-            position: { referencePanel: 'speed_graph', direction: 'within' },
-            params: {
-                title: 'System Temperatures',
-                lines: [
-                    { 
-                        dataKey: 'temperatures_motor',
-                        label: 'Motor', 
-                        color: '#FF3333' 
-                    },
-                    { 
-                        dataKey: 'temperatures_cvt', 
-                        label: 'CVT', 
-                        color: '#FFA500' 
-                    }
-                ]
-            }
-        });
     // Speed, RPM, Voltage, Current, Eng Temp, CVT temp, SoC
     api.addPanel({
         id: 'car_panel',
-            component: 'car_panel',
-            title: 'Live Data',
-            position: { direction: 'right' }
-        });
+        component: 'car_panel',
+        title: 'Live Data',
+        position: { direction: 'right' }
+    });
 
-        // ACCX, ACCY, ACCZ
-        api.addPanel({
-            id: 'gg_panel',
-            component: 'gg_panel',
-            title: 'G-G Diagram',
-            position: { referencePanel: 'car_panel',direction: 'below' }
-        });
+    // ACCX, ACCY, ACCZ
+    api.addPanel({
+        id: 'gg_panel',
+        component: 'gg_panel',
+        title: 'G-G Diagram',
+        position: { referencePanel: 'car_panel', direction: 'below' }
+    });
+}
 
-    }
+const Dashboard = () => {
+    // Interface variables
+    const [api, setApi] = useState<DockviewApi>();
+    const [serverIp, setServerIp] = useState<string>("");
+    const [inputIp, setInputIp] = useState("localhost");
+    const [viewMode, setViewMode] = useState<"time" | "dist">("time");
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const Dashboard = () => {
+    // Data received from the backend
+    const incomingData = useTelemetry(serverIp || null);
 
-        // Interface variables
-        const [api, setApi] = useState<DockviewApi>();
-        const [serverIp, setServerIp] = useState<string>(""); 
-        const [inputIp, setInputIp] = useState("localhost");
-        const [viewMode, setViewMode] = useState<"time" | "dist">("time");
-        const [isModalOpen, setIsModalOpen] = useState(false);
+    // Data context
+    const [contextState, setContextState] = useState({
+        latestData: null as TelemetriaData | null,
+        history: {
+            timestamps: [] as number[],
+            speeds: [] as number[],
+            rpms: [] as number[],
+            temperatures_motor: [] as number[],
+            temperatures_cvt: [] as number[],
+            soc: [] as number[],
+            volt: [] as number[],
+            current: [] as number[],
+            acc_x: [] as number[],
+            acc_y: [] as number[],
+            acc_z: [] as number[],
+            dps_x: [] as number[],
+            dps_y: [] as number[],
+            dps_z: [] as number[],
+            roll: [] as number[],
+            pitch: [] as number[],
+            latitude: [] as number[],
+            longitude: [] as number[],
+            path: [] as [number, number][],
+        },
+        connectedIp: null as string | null,
+    });
 
-        // Data received from the backend
-        const incomingData = useTelemetry(serverIp || null);
+    // The server keeps track of the last 500 data points in case of a refresh
+    // or new client connection
+    useEffect(() => {
+        if (!serverIp) return;
 
-        // Lap and S/F circle
-        const [session, setSession] = useState({
-            lapCount: 0,
-            currentLapStart: 0,     
-            currentLapDuration: 0,  
-            lastLapTime: 0,
-            bestLapTime: 0,
-            startFinishLine: null as { lat: number, lon: number } | null,
-            isLapValid: false       
-        });
+        const fetchHistory = async () => {
+            try {
+                const res = await fetch(`http://${serverIp}:8000/api/session/history`);
+                const historyData = await res.json();
+                
+                if (Array.isArray(historyData) && historyData.length > 0) {
+                    setContextState(prev => {
+                        // Helper to merge arrays
+                        const merge = (_oldArr: number[], key: string) => {
+                             // Map the history objects to values, defaulting to 0
+                             const newValues = historyData.map((d: any) => d[key] ?? 0);
+                             // Return the last 300 points combined
+                             return [...newValues].slice(-300);
+                        };
+                        
+                        // Reconstruct path from history
+                        const newPath = historyData
+                             .filter((d: any) => d.latitude && d.longitude)
+                             .map((d: any) => [d.latitude, d.longitude] as [number, number])
+                             .slice(-500); // MAX_PATH_POINTS
 
-        // Data context 
-        const [contextState, setContextState] = useState({
-            latestData: null as TelemetriaData | null,
-            history: {
-                timestamps: [] as number[],
-                speeds: [] as number[],
-                rpms: [] as number[],
-                temperatures_motor: [] as number[],
-                temperatures_cvt: [] as number[],
-                soc: [] as number[],
-                volt: [] as number[],
-                current: [] as number[],
-                acc_x: [] as number[],
-                acc_y: [] as number[],
-                acc_z: [] as number[],
-                dps_x: [] as number[],
-                dps_y: [] as number[],
-                dps_z: [] as number[],
-                roll: [] as number[],
-                pitch: [] as number[],
-                latitude: [] as number[],
-                longitude: [] as number[],
-                path: [] as [number, number][],
-            },
-            connectedIp: null as string | null,
-        });
-
-        // Updates lap counter
-        useEffect(() => {
-            if (!incomingData) return;
-            const now = Date.now();
-            const lat = incomingData.latitude;
-            const lon = incomingData.longitude;
-
-            setSession(prev => {
-                let newState = { ...prev };
-                if (newState.currentLapStart === 0) newState.currentLapStart = now;
-                newState.currentLapDuration = now - newState.currentLapStart;
-
-                if (newState.startFinishLine && lat !== 0 && lon !== 0) {
-                    const dist = getDistanceFromLatLonInM(lat, lon, newState.startFinishLine.lat, newState.startFinishLine.lon);
-                    if (dist < SF_RADIUS && newState.currentLapDuration > 10000) {
-                        const lapTime = newState.currentLapDuration;
-                        newState.lapCount += 1;
-                        newState.lastLapTime = lapTime;
-                        if (newState.bestLapTime === 0 || lapTime < newState.bestLapTime) {
-                            newState.bestLapTime = lapTime;
-                        }
-                        newState.currentLapStart = now;
-                        newState.currentLapDuration = 0;
-                    }
+                        // Return the fully populated state
+                        return {
+                            ...prev,
+                            history: {
+                                timestamps: merge(prev.history.timestamps, 'timestamp'),
+                                speeds: merge(prev.history.speeds, 'speed'),
+                                rpms: merge(prev.history.rpms, 'rpm'),
+                                temperatures_motor: merge(prev.history.temperatures_motor, 'temperature'),
+                                temperatures_cvt: merge(prev.history.temperatures_cvt, 'temp_cvt'),
+                                soc: merge(prev.history.soc, 'soc'),
+                                volt: merge(prev.history.volt, 'volt'),
+                                current: merge(prev.history.current, 'current'),
+                                acc_x: merge(prev.history.acc_x, 'acc_x'),
+                                acc_y: merge(prev.history.acc_y, 'acc_y'),
+                                acc_z: merge(prev.history.acc_z, 'acc_z'),
+                                dps_x: merge(prev.history.dps_x, 'dps_x'),
+                                dps_y: merge(prev.history.dps_y, 'dps_y'),
+                                dps_z: merge(prev.history.dps_z, 'dps_z'),
+                                roll: merge(prev.history.roll, 'roll'),
+                                pitch: merge(prev.history.pitch, 'pitch'),
+                                latitude: merge(prev.history.latitude, 'latitude'),
+                                longitude: merge(prev.history.longitude, 'longitude'),
+                                path: newPath
+                            },
+                            // Use the last packet to set the "Current" numbers
+                            latestData: historyData[historyData.length - 1]
+                        };
+                    });
+                    console.log(`[Dashboard] Restored ${historyData.length} history points.`);
                 }
-                return newState;
-            });
-
-        }, [incomingData]); 
-
-        // Set the S/F
-        const handleSetSF = () => {
-            if (contextState.latestData) {
-                setSession(prev => ({
-                    ...prev,
-                    startFinishLine: { 
-                        lat: contextState.latestData!.latitude, 
-                        lon: contextState.latestData!.longitude 
-                    }
-                }));
+            } catch (e) {
+                console.error("Failed to fetch history:", e);
             }
         };
 
-        // Updates interface to show incoming data
-        useEffect(() => {
-            if (incomingData) {
-                setContextState(prev => {
-                    const MAX_POINTS = 300; 
-                    const MAX_PATH_POINTS = 500; 
+        fetchHistory();
+    }, [serverIp]); // Runs once when serverIp is set (new connection)
 
-                    const updateArr = (arr: number[], val: number) => {
-                        const newArr = [...arr, val];
-                        if (newArr.length > MAX_POINTS) newArr.shift();
-                        return newArr;
-                    };
+    // SF calculations are done on the backend server
+    const handleSetSF = async () => {
+        if (!serverIp) return;
+        try {
+            await fetch(`http://${serverIp}:8000/api/set-sf`, { method: "POST" });
+            console.log("Sent request to set Start/Finish line");
+        } catch (err) {
+            console.error("Failed to set Start/Finish line:", err);
+        }
+    };
 
-                    const updatePath = (currentPath: [number, number][], lat: number, lon: number) => {
-                        const newPoint: [number, number] = [lat, lon];
-                        const newPath = [...currentPath, newPoint];
-                        if (newPath.length > MAX_PATH_POINTS) newPath.shift(); 
-                        return newPath;
-                    };
+    const activeSF = contextState.latestData?.sf_lat && contextState.latestData?.sf_lon
+        ? { lat: contextState.latestData.sf_lat, lon: contextState.latestData.sf_lon }
+        : null;
 
-                    let safeTimestamp = Date.now();
-                    if (typeof incomingData.timestamp === 'number') {
-                        safeTimestamp = incomingData.timestamp;
-                    }
+    // Updates interface to show incoming data
+    useEffect(() => {
+        if (incomingData) {
+            setContextState(prev => {
+                const MAX_POINTS = 300;
+                const MAX_PATH_POINTS = 500;
 
-                    return {
-                        latestData: incomingData,
-                        connectedIp: serverIp,
-                        history: {
-                            timestamps: updateArr(prev.history.timestamps, safeTimestamp),
-                            speeds: updateArr(prev.history.speeds, incomingData.speed),
-                            rpms: updateArr(prev.history.rpms, incomingData.rpm),
-                            temperatures_motor: updateArr(prev.history.temperatures_motor, incomingData.temperature),
-                            temperatures_cvt: updateArr(prev.history.temperatures_cvt, incomingData.temp_cvt),
-                            soc: updateArr(prev.history.soc, incomingData.soc),
-                            volt: updateArr(prev.history.volt, incomingData.volt),
-                            current: updateArr(prev.history.current, incomingData.current),
-                            acc_x: updateArr(prev.history.acc_x, incomingData.acc_x),
-                            acc_y: updateArr(prev.history.acc_y, incomingData.acc_y),
-                            acc_z: updateArr(prev.history.acc_z, incomingData.acc_z),
-                            dps_x: updateArr(prev.history.dps_x, incomingData.dps_x),
-                            dps_y: updateArr(prev.history.dps_y, incomingData.dps_y),
-                            dps_z: updateArr(prev.history.dps_z, incomingData.dps_z),
-                            roll: updateArr(prev.history.roll, incomingData.roll),
-                            pitch: updateArr(prev.history.pitch, incomingData.pitch),
-                            latitude: updateArr(prev.history.latitude, incomingData.latitude),
-                            longitude: updateArr(prev.history.longitude, incomingData.longitude),
-                            path: updatePath(prev.history.path, incomingData.latitude, incomingData.longitude) 
-                        }
-                    };
-                });
-            }
-        }, [incomingData, serverIp]);
+                const updateArr = (arr: number[], val: number) => {
+                    const newArr = [...arr, val];
+                    if (newArr.length > MAX_POINTS) newArr.shift();
+                    return newArr;
+                };
 
-        // Draws the main interface
-        const onReady = (event: DockviewReadyEvent) => {
-            setApi(event.api);
-            loadDefaultLayout(event.api);
-        };
+                const updatePath = (currentPath: [number, number][], lat: number, lon: number) => {
+                    const newPoint: [number, number] = [lat, lon];
+                    const newPath = [...currentPath, newPoint];
+                    if (newPath.length > MAX_PATH_POINTS) newPath.shift();
+                    return newPath;
+                };
 
-        // Resets to the layout predefined here
-        const handleResetLayout = () => { if (api) loadDefaultLayout(api); };
+                let safeTimestamp = Date.now();
+                if (typeof incomingData.timestamp === 'number') {
+                    safeTimestamp = incomingData.timestamp;
+                }
 
-        const handleAddGraph = (selectedKeys: string[]) => {
-            if (!api || selectedKeys.length === 0) return;
-
-            // Generate a unique ID
-            const panelId = `custom_graph_${Date.now()}`;
-
-            // Map selected keys to the 'lines' structure expected by ChartPanel
-            const lines = selectedKeys.map((key, index) => {
-                const channelInfo = AVAILABLE_CHANNELS.find(c => c.key === key);
                 return {
-                    dataKey: key,
-                    label: channelInfo?.label || key,
-                    color: GRAPH_COLORS[index % GRAPH_COLORS.length] // Cycle through colors
+                    latestData: incomingData,
+                    connectedIp: serverIp,
+                    history: {
+                        timestamps: updateArr(prev.history.timestamps, safeTimestamp),
+                        speeds: updateArr(prev.history.speeds, incomingData.speed),
+                        rpms: updateArr(prev.history.rpms, incomingData.rpm),
+                        temperatures_motor: updateArr(prev.history.temperatures_motor, incomingData.temperature),
+                        temperatures_cvt: updateArr(prev.history.temperatures_cvt, incomingData.temp_cvt),
+                        soc: updateArr(prev.history.soc, incomingData.soc),
+                        volt: updateArr(prev.history.volt, incomingData.volt),
+                        current: updateArr(prev.history.current, incomingData.current),
+                        acc_x: updateArr(prev.history.acc_x, incomingData.acc_x),
+                        acc_y: updateArr(prev.history.acc_y, incomingData.acc_y),
+                        acc_z: updateArr(prev.history.acc_z, incomingData.acc_z),
+                        dps_x: updateArr(prev.history.dps_x, incomingData.dps_x),
+                        dps_y: updateArr(prev.history.dps_y, incomingData.dps_y),
+                        dps_z: updateArr(prev.history.dps_z, incomingData.dps_z),
+                        roll: updateArr(prev.history.roll, incomingData.roll),
+                        pitch: updateArr(prev.history.pitch, incomingData.pitch),
+                        latitude: updateArr(prev.history.latitude, incomingData.latitude),
+                        longitude: updateArr(prev.history.longitude, incomingData.longitude),
+                        path: updatePath(prev.history.path, incomingData.latitude, incomingData.longitude)
+                    }
                 };
             });
+        }
+    }, [incomingData, serverIp]);
 
-            // Determine a title based on selection
-            const title = lines.map(l => l.label).join(" / ");
+    // Draws the main interface
+    const onReady = (event: DockviewReadyEvent) => {
+        setApi(event.api);
+        loadDefaultLayout(event.api);
+    };
 
-            // Add the panel to the dockview
-            api.addPanel({
-                id: panelId,
-                component: 'chart_panel',
-                title: 'Custom Graph',
-                position: { direction: 'right' }, // Default to splitting right
-                params: {
-                    title: title,
-                    lines: lines
-                }
-            });
-        };
+    const handleResetLayout = () => { if (api) loadDefaultLayout(api); };
 
-        // This is mostly useful because of the top bar, it's all defined here
-        // The rest of the UI is handled by the dockview API
-        return (
-            <div className="app-container">
-            <AddGraphModal 
-            isOpen={isModalOpen} 
-            onClose={() => setIsModalOpen(false)} 
-            onAdd={handleAddGraph} 
+    const handleAddGraph = (selectedKeys: string[]) => {
+        if (!api || selectedKeys.length === 0) return;
+        const panelId = `custom_graph_${Date.now()}`;
+        const lines = selectedKeys.map((key, index) => {
+            const channelInfo = AVAILABLE_CHANNELS.find(c => c.key === key);
+            return {
+                dataKey: key,
+                label: channelInfo?.label || key,
+                color: GRAPH_COLORS[index % GRAPH_COLORS.length]
+            };
+        });
+        const title = lines.map(l => l.label).join(" / ");
+        api.addPanel({
+            id: panelId,
+            component: 'chart_panel',
+            title: 'Custom Graph',
+            position: { direction: 'right' },
+            params: { title: title, lines: lines }
+        });
+    };
+
+    return (
+        <div className="app-container">
+            <AddGraphModal
+                isOpen={isModalOpen}
+                onClose={() => setIsModalOpen(false)}
+                onAdd={handleAddGraph}
             />
 
             <div className="connection-bar">
-            <div className="app-logo">
-            <span style={{color: 'var(--accent-cyan)'}}>MANGUE</span>
-            <span style={{color: '#fff', fontWeight: 'lighter'}}>TELEMETRY</span>
-            </div>
-            <div className="divider-v"></div>
-            <div className="toolbar-group">
-            <div className="input-group">
-            <span className="input-label">HOST</span>
-            <input 
-            className="connection-input"
-            value={inputIp} 
-            onChange={(e) => setInputIp(e.target.value)}
-            placeholder="127.0.0.1"
-            />
-            </div>
-            <button 
-            className={`btn-tech ${serverIp ? 'disconnect' : 'connect'}`}
-            onClick={() => setServerIp(inputIp)}
-            >
-            {serverIp ? "STOP" : "LINK"}
-            </button>
-            <button 
-            className="btn-tech"
-            onClick={handleSetSF}
-            title="Set Start/Finish Line"
-            style={{borderColor: session.startFinishLine ? 'var(--accent-green)' : '#444'}}
-            >
-            {session.startFinishLine ? "S/F SET" : "SET S/F"}
-            </button>
-            </div>
-            <div className="divider-v"></div>
-            <div className="toolbar-group">
-            <button 
-            className="btn-tech" 
-            onClick={() => setIsModalOpen(true)}
-            title="Add New Graph Panel"
-            >
-            + ADD GRAPH
-            </button>
-            <div className="mode-toggle">
-            <div 
-            className={`mode-option ${viewMode === 'time' ? 'active' : ''}`}
-            onClick={() => setViewMode('time')}
-            >TIME</div>
-            <div 
-            className={`mode-option ${viewMode === 'dist' ? 'active' : ''}`}
-            onClick={() => setViewMode('dist')}
-            >DIST</div>
-            </div>
-            <button className="btn-tech" onClick={handleResetLayout}>RESET UI</button>
-            </div>
-            <div className="divider-v"></div>
-            <div className="session-info">
-            <div className="info-block">
-            <span className="info-label">LAP</span>
-            <span className="info-value" style={{color: 'var(--accent-cyan)'}}>
-            {session.lapCount.toString().padStart(2, '0')}
-            </span>
-            </div>
-            <div className="info-block">
-            <span className="info-label">CURRENT</span>
-            <span className="info-value time">
-            {formatLapTime(session.currentLapDuration)}
-            </span>
-            </div>
-            <div className="info-block mobile-hide">
-            <span className="info-label">LAST</span>
-            <span className="info-value">
-            {formatLapTime(session.lastLapTime)}
-            </span>
-            </div>
-            <div className="info-block mobile-hide">
-            <span className="info-label">BEST</span>
-            <span className="info-value" style={{color: 'var(--accent-green)'}}>
-            {formatLapTime(session.bestLapTime)}
-            </span>
-            </div>
-            </div>
-            <span className={`connection-status ${incomingData ? 'status-connected' : 'status-disconnected'}`}>
-            {incomingData ? "● LIVE STREAM" : "○ OFFLINE"}
-            </span>
+                <div className="app-logo">
+                    <span style={{ color: 'var(--accent-cyan)' }}>MANGUE</span>
+                    <span style={{ color: '#fff', fontWeight: 'lighter' }}>TELEMETRY</span>
+                </div>
+                <div className="divider-v"></div>
+                <div className="toolbar-group">
+                    <div className="input-group">
+                        <span className="input-label">HOST</span>
+                        <input
+                            className="connection-input"
+                            value={inputIp}
+                            onChange={(e) => setInputIp(e.target.value)}
+                            placeholder="127.0.0.1"
+                        />
+                    </div>
+                    <button
+                        className={`btn-tech ${serverIp ? 'disconnect' : 'connect'}`}
+                        onClick={() => setServerIp(inputIp)}
+                    >
+                        {serverIp ? "STOP" : "LINK"}
+                        </button>
+                        <button
+                        className="btn-tech"
+                        onClick={handleSetSF}
+                        title="Set Start/Finish Line"
+                        style={{ 
+                            borderColor: activeSF ? 'var(--accent-green)' : '#444',
+                            color: activeSF ? 'var(--accent-green)' : '#fff'
+                        }}
+                        >
+                        SET S/F
+                        </button>
+                </div>
+                <div className="divider-v"></div>
+                <div className="toolbar-group">
+                    <button
+                        className="btn-tech"
+                        onClick={() => setIsModalOpen(true)}
+                        title="Add New Graph Panel"
+                    >
+                        + ADD GRAPH
+                    </button>
+                    <div className="mode-toggle">
+                        <div
+                            className={`mode-option ${viewMode === 'time' ? 'active' : ''}`}
+                            onClick={() => setViewMode('time')}
+                        >TIME</div>
+                        <div
+                            className={`mode-option ${viewMode === 'dist' ? 'active' : ''}`}
+                            onClick={() => setViewMode('dist')}
+                        >DIST</div>
+                    </div>
+                    <button className="btn-tech" onClick={handleResetLayout}>RESET UI</button>
+                </div>
+                <div className="divider-v"></div>
+
+                <div className="session-info">
+                    <div className="info-block">
+                        <span className="info-label">LAP</span>
+                        <span className="info-value" style={{ color: 'var(--accent-cyan)' }}>
+                            {(incomingData?.lap_count || 0).toString().padStart(2, '0')}
+                        </span>
+                    </div>
+                    <div className="info-block">
+                        <span className="info-label">CURRENT</span>
+                        <span className="info-value time">
+                            {formatLapTime(incomingData?.current_lap_time || 0)}
+                        </span>
+                    </div>
+                    <div className="info-block mobile-hide">
+                        <span className="info-label">LAST</span>
+                        <span className="info-value">
+                            {formatLapTime(incomingData?.last_lap_time || 0)}
+                        </span>
+                    </div>
+                    <div className="info-block mobile-hide">
+                        <span className="info-label">BEST</span>
+                        <span className="info-value" style={{ color: 'var(--accent-green)' }}>
+                            {formatLapTime(incomingData?.best_lap_time || 0)}
+                        </span>
+                    </div>
+                </div>
+                <span className={`connection-status ${incomingData ? 'status-connected' : 'status-disconnected'}`}>
+                    {incomingData ? "● LIVE STREAM" : "○ OFFLINE"}
+                </span>
             </div>
 
             <div style={{ flexGrow: 1, overflow: 'hidden' }}>
-            <TelemetryProvider value={{ ...contextState, startFinishLine: session.startFinishLine }}>
-            <DockviewReact components={components} onReady={onReady} className="dockview-theme-dark" />
-            </TelemetryProvider>
+                <TelemetryProvider value={{ ...contextState, startFinishLine: activeSF }}>
+                    <DockviewReact components={components} onReady={onReady} className="dockview-theme-dark" />
+                </TelemetryProvider>
             </div>
-            </div>
-        );
-    };
+        </div>
+    );
+};
 
-    export default Dashboard;
+export default Dashboard;

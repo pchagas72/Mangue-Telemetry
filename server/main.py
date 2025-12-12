@@ -4,10 +4,12 @@ import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi.middleware.cors import CORSMiddleware
 
 from settings import settings
 from services.parser import DataParser
 from services.database import DatabaseService
+from services.data_processing import DataProcessing
 from telemetry.serial_receiver import SerialTelemetry
 from telemetry.mqtt_protocol import MqttProtocol
 from simuladores.python.simulador import Simulador
@@ -25,46 +27,45 @@ class ConnectionManager:
         self.active_connections.append(websocket)
 
     def disconnect(self, websocket: WebSocket):
-        self.active_connections.remove(websocket)
+        if websocket in self.active_connections:
+            self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
-        # Concurrent sending
+        # Handle empty lists gracefully
+        if not self.active_connections:
+            return
         await asyncio.gather(*[connection.send_text(message) for connection in self.active_connections])
 
 # Building services
-manager = ConnectionManager()
-parser = DataParser(payload_fmt=settings.serial_packet_format)
-db_service = DatabaseService(db_path=settings.database_path)
-telemetry_service = None # Initialized in lifespan
+manager = ConnectionManager() # The connection manager takes care of each client
+parser = DataParser(payload_fmt=settings.serial_packet_format) # Parses raw serial received data
+db_service = DatabaseService(db_path=settings.database_path) # DB interface
+data_processing = DataProcessing() # Responsable for processing any data required by the front end
+telemetry_service = None # SerialTelemetry, MqttProtocol or Simulador
+
+# Helper for history
+history_buffer = []
+MAX_BUFFER = 500
 
 def get_telemetry_service():
-    """
-        Gets the selected telemetry service (see settings.py)
-    """
+    """ Gets the selected telemetry service """
     source = settings.data_source
     if source == "serial":
-        logger.info("Using LoRa serial as data source")
         return SerialTelemetry(port=settings.serial_port,
                                baudrate=settings.serial_baudrate,
                                packet_format=settings.serial_packet_format)
     elif source == "mqtt":
-        logger.info("Using MQTT as data source.")
         return MqttProtocol(hostname=settings.mqtt_hostname,
                                port=settings.mqtt_port,
                                username=settings.mqtt_username,
                                password=settings.mqtt_password)
     elif source == "simulator":
-        logger.info("Using simulated data source.")
         return Simulador()
     else:
-        raise ValueError(f"Unknown data source selected, check settings.py")
+        raise ValueError(f"Unknown data source: {source}")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """
-    Manages the application's startup and shutdown events.
-    """
-    # Code to run on startup
     global telemetry_service
     telemetry_service = get_telemetry_service()
     broadcast_task = None
@@ -81,21 +82,21 @@ async def lifespan(app: FastAPI):
 
     if broadcast_task:
         broadcast_task.cancel()
-
     if settings.data_source != "simulator":
         await telemetry_service.stop()
-
     db_service.close()
-    logger.info("Application shutdown complete.")
 
-# Building fastAPI app
 app = FastAPI(lifespan=lifespan)
 
+# Allow CORS so your React app can hit the API endpoints
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 async def broadcast_telemetry():
-    """
-    Continuously gets data from the selected source, parses it, saves to DB,
-    and broadcasts to all connected WebSocket clients.
-    """
     while True:
         try:
             data_to_send = None
@@ -109,29 +110,56 @@ async def broadcast_telemetry():
             if data_to_send:
                 if settings.data_source != "simulator":
                     db_service.save_telemetry_data(data_to_send)
-                
-                if 'timestamp' in data_to_send and not isinstance(data_to_send['timestamp'], str):
-                    data_to_send['timestamp'] = str(data_to_send['timestamp'])
 
-                message = json.dumps(data_to_send)
-                await manager.broadcast(message)
+                # Do post processing needed for the interface display
+                # Apply filters and calculate new variables here
+                # Do not mix this up with the math channel
+                enriched_data = data_processing.process_packet(data_to_send)
+                
+                # History Buffer
+                # This allows for quicker rendering of the last 500 points
+                history_buffer.append(enriched_data)
+                if len(history_buffer) > MAX_BUFFER:
+                    history_buffer.pop(0)
+
+                # Send data
+                await manager.broadcast(json.dumps(enriched_data))
             
         except asyncio.CancelledError:
-            logger.info("Broadcast task cancelled.")
             break
         except Exception as e:
-            logger.error(f"[Broadcast Error] {e}", exc_info=True)
+            logger.error(f"Broadcast Error: {e}")
+            await asyncio.sleep(1) # Prevent tight loop on error
 
         await asyncio.sleep(settings.broadcast_delay_seconds)
 
 @app.websocket("/ws/telemetry")
 async def websocket_endpoint(websocket: WebSocket):
-    """Handles WebSocket connections for the telemetry dashboard."""
     await manager.connect(websocket)
-    logger.info(f"New client connected from {websocket.client.host}")
     try:
         while True:
-            await websocket.receive_text() # Keeps connection alive
+            await websocket.receive_text()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
-        logger.info(f"Client {websocket.client.host} disconnected.")
+
+# Endpoint to set S/F Line
+# This is essential for the lap counter
+@app.post("/api/set-sf")
+async def set_start_finish():
+    if history_buffer:
+        last_packet = history_buffer[-1]
+        lat = last_packet.get('latitude')
+        lon = last_packet.get('longitude')
+        if lat and lon:
+            data_processing.set_sf_line(lat, lon)
+            return {"status": "ok", "location": {"lat": lat, "lon": lon}}
+    return {"status": "error", "message": "No GPS data available"}
+
+@app.get("/api/session/history")
+async def get_history():
+    """
+    Returns the cached telemetry history so new clients 
+    can populate their graphs immediately.
+    """
+    # Return the global buffer (last 500 points)
+    return history_buffer

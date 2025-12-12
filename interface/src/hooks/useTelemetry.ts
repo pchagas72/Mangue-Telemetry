@@ -14,7 +14,7 @@ export function useTelemetry(serverIp: string | null) {
 
         const ws = new WebSocket(`ws://${serverIp}:8000/ws/telemetry`);
 
-        ws.onopen = () => {
+            ws.onopen = () => {
             console.log("WebSocket connected to", serverIp);
         };
 
