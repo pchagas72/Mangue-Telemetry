@@ -38,8 +38,8 @@ Be aware that this software is still not released, many changes are still to be 
 | Car Model | ✅ | Visualizes Roll/Pitch in real-time |
 | **G-G Diagram** | ✅ | Lateral vs Longitudinal acceleration scatter plot |
 | **Strip Charts (Time vs Data)**| ✅ | Standard scrolling telemetry graphs |
-| **X-Y Plotting** | ✅ | Cross-plotting capabilities (e.g., RPM vs Speed) |
-| **Time/Distance Toggle** | ✅ | Switch graph X-Axis between Time and Distance travelled |
+| **X-Y Plotting** | 🚧  | Cross-plotting capabilities (e.g., RPM vs Speed) |
+| **Time/Distance Toggle** | 🚧  | Switch graph X-Axis between Time and Distance travelled |
 | **Analysis Tools (Roadmap)** | | *Features requested by the FSAE community* |
 | **Math Channels** | 🚧 | User-defined equations (e.g., `WheelSlip = RPM/Speed`) |
 | **Histograms** | 🚧 | Distribution analysis for suspension/damper tuning |
@@ -52,3 +52,18 @@ Be aware that this software is still not released, many changes are still to be 
 This project is Open Source. Unlike many competition teams that keep their tools closed, I believe in open college engineering. Feel free to fork and star.
 
 Any doubts in using the software, feel free to contact me.
+
+## Next updates (todo list)
+
+- [ ] Implement distance toggle on X axis
+    - [ ] Calculate distance on the backend
+    - [ ] Enable toggle on the interface
+
+- [ ] Add X axis option on the "add graph" button
+    - [ ] Implement changes on charGrafico
+
+- [ ] Add math channels
+    - [ ] Implement evals on the backend
+    - [ ] Add user-defined equations as graphs and numbers to the interface
+
+- [ ] Research viability of InfluxDB implementation
