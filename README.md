@@ -3,7 +3,7 @@
 __Current Version:__ 2.0 (Professional Refactor) Inspiration: MoTeC i2, McLaren ATLAS
 
 <video controls width="100%">
-    <source src="assets/2.0/telemetria_demonstração.mp4" type="video/mp4">
+    <source src="./assets/2.0/demo.mp4" type="video/mp4">
     Your browser does not support the video tag.
 </video>
 
