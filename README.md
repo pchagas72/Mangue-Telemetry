@@ -56,15 +56,27 @@ Any doubts in using the software, feel free to contact me.
 ## Next updates (todo list)
 
 - [ ] Implement distance toggle on X axis
-    - [ ] Calculate distance on the backend
+    - [ ] Calculate total distance on the backend
+        - [ ] total\_distance = total\_distance + haversine(current\_pos, last\_pos)
+        - [ ] Send total distance through process\_packet()
     - [ ] Enable toggle on the interface
+        - [ ] Move viewModel to Telemetrycontext
+        - [ ] Update chartPanel to use the total\_distance
+    - [ ] Calculate lap\_distance that resets every time the car crosses the S/F area
 
 - [ ] Add X axis option on the "add graph" button
-    - [ ] Implement changes on charGrafico
+    - [ ] Add a "select" input to choose X axis
+    - [ ] Pass params as xAxisKey to chart\_panel
 
-- [ ] Add math channels
+- [ ] Add primitive math channel
     - [ ] Implement evals on the backend
+        - [ ] Implement math\_channels dict to data\_processsing.py or settings.py
+        - [ ] Implement calculation logic in data\_processing.py using eval (switch to math lib later)
     - [ ] Add user-defined equations as graphs and numbers to the interface
+        - [X] Add custom graphs based on a CHANNELS const
+        - [ ] Add custom variables to LIVE DATA panel
+
+- [ ] Create separate panel for bar plots and number plots
 
 - [ ] Research viability of InfluxDB implementation
 
