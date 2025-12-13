@@ -67,3 +67,11 @@ Any doubts in using the software, feel free to contact me.
     - [ ] Add user-defined equations as graphs and numbers to the interface
 
 - [ ] Research viability of InfluxDB implementation
+
+## Known issues:
+
+- Time/Dist toggle does nothing for now
+    - Creating backend solution
+
+- Time plot looks weird (error in processing the timestamp set by the server)
+    - Deciding where is best to record the timestamp (ECU vs Server)
