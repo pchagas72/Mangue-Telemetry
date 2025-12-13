@@ -70,7 +70,7 @@ Any doubts in using the software, feel free to contact me.
 
 - [ ] Add primitive math channel
     - [ ] Implement evals on the backend
-        - [ ] Implement math\_channels dict to data\_processsing.py or settings.py
+        - [ ] Implement math\_channels dict to settings.py
         - [ ] Implement calculation logic in data\_processing.py using eval (switch to math lib later)
     - [ ] Add user-defined equations as graphs and numbers to the interface
         - [X] Add custom graphs based on a CHANNELS const
