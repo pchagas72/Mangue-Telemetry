@@ -2,14 +2,15 @@
 
 __Current Version:__ 2.0 (Professional Refactor) Inspiration: MoTeC i2, McLaren ATLAS
 
-<video controls width="100%">
-    <source src="./assets/2.0/demo.mp4" type="video/mp4">
-    Your browser does not support the video tag.
-</video>
-
 ## Project Scope
 
 This project is a bespoke data acquisition and visualization tool developed by me for the Mangue Baja SAE vehicle. It serves as the bridge between our custom embedded systems (ECUs) and race engineers.
+
+## Quick video demonstration
+
+__Be aware that this is using simulated data (sine waves) for showcase__
+
+https://github.com/user-attachments/assets/8abe97bf-6343-4243-8817-2ed7c73c9f20
 
 ## Development Roadmap
 
