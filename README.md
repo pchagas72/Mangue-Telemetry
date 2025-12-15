@@ -73,12 +73,14 @@ Any doubts in using the software, feel free to contact me.
         - [ ] Implement math\_channels dict to settings.py
         - [ ] Implement calculation logic in data\_processing.py using eval (switch to math lib later)
     - [ ] Add user-defined equations as graphs and numbers to the interface
-        - [X] Add custom graphs based on a CHANNELS const
-        - [ ] Add custom variables to LIVE DATA panel
+        - [X] Add custom graphs based on a channels const
+        - [ ] Add custom variables to live data panel
 
 - [ ] Create separate panel for bar plots and number plots
 
-- [ ] Research viability of InfluxDB implementation
+- [X] Research viability of InfluxDB implementation
+    - [ ] Migrate database.py to InfluxDB (writing data)
+    - [ ] Migrate database.py to InfluxDB (reading data)
 
 ## Known issues:
 
