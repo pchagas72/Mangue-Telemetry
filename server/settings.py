@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     # MQTT Broker Settings
     mqtt_hostname: str = "44dbd06832c54083bd5d0cacdb217aff.s1.eu.hivemq.cloud"
     mqtt_port: int = 8883
-    mqtt_username: str = "***REMOVED***"
-    mqtt_password: str = "***REMOVED***"
+    mqtt_username: str = ""
+    mqtt_password: str = ""
 
     # LoRa Serial Receiver Settings
     serial_port: str = "/dev/pts/4" # Change to your actual port
