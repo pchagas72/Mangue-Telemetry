@@ -4,14 +4,14 @@ from typing import Literal
 class Settings(BaseSettings):
     # Server serttings
     # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "serial"
-    data_source: Literal["serial", "mqtt", "simulator"] = "serial"
-    broadcast_delay_seconds: float = 0.05
+    data_source: Literal["serial", "mqtt", "simulator"] = "mqtt"
+    broadcast_delay_seconds: float = 0.5
 
     # MQTT Broker Settings
-    mqtt_hostname: str = ""
-    mqtt_port: int = 0
-    mqtt_username: str = ""
-    mqtt_password: str = ""
+    mqtt_hostname: str = "44dbd06832c54083bd5d0cacdb217aff.s1.eu.hivemq.cloud"
+    mqtt_port: int = 8883
+    mqtt_username: str = "***REMOVED***"
+    mqtt_password: str = "***REMOVED***"
 
     # LoRa Serial Receiver Settings
     serial_port: str = "/dev/pts/4" # Change to your actual port

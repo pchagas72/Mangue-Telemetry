@@ -1,6 +1,9 @@
-# server/services/parser.py
 import struct
+import logging
 from typing import Dict, Any
+
+# Configurar logger
+logger = logging.getLogger(__name__)
 
 class DataParser:
     """
@@ -18,8 +21,10 @@ class DataParser:
         Parses a raw byte payload into a dictionary with physical units.
         Returns None if the packet is invalid.
         """
+        # Verifica o tamanho antes de tentar decodificar
         if len(payload) != self.expected_size:
-            print(f"[Parser] ERRO: Tamanho do payload inesperado: {len(payload)}. Esperado: {self.expected_size}")
+            # Usa DEBUG para não poluir o terminal com pacotes inválidos/ruído
+            logger.info(f"[Parser] Ignored packet with unexpected size: {len(payload)}. Expected: {self.expected_size}")
             return None
 
         raw = struct.unpack(self.payload_fmt, payload)

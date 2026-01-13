@@ -10,8 +10,8 @@ from settings import settings
 from services.parser import DataParser
 from services.database import DatabaseService
 from services.data_processing import DataProcessing
-from telemetry.serial_receiver import SerialTelemetry
-from telemetry.mqtt_protocol import MqttProtocol
+from telemetry.LoRa import SerialTelemetry
+from telemetry.MQTT import MqttProtocol
 from simuladores.python.simulador import Simulador
 
 # Setting up components
@@ -19,6 +19,10 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 class ConnectionManager:
+    """
+        ConnectionManager is the abstraction layer between the server and the 
+        client list
+    """
     def __init__(self):
         self.active_connections: list[WebSocket] = []
 
@@ -31,7 +35,7 @@ class ConnectionManager:
             self.active_connections.remove(websocket)
 
     async def broadcast(self, message: str):
-        # Handle empty lists gracefully
+        # Handle empty lists
         if not self.active_connections:
             return
         await asyncio.gather(*[connection.send_text(message) for connection in self.active_connections])
@@ -88,7 +92,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# Allow CORS so your React app can hit the API endpoints
+# Allow the interface to connect to the server
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -104,8 +108,11 @@ async def broadcast_telemetry():
                 data_to_send = await telemetry_service.gerar_dados()
             else:
                 payload = await telemetry_service.get_payload()
-                if payload:
+                if payload != None:
                     data_to_send = parser.parse_packet(payload)
+                    if data_to_send == None:
+                        payload = None
+
             
             if data_to_send:
                 if settings.data_source != "simulator":
