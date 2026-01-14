@@ -5,7 +5,12 @@ import type { TelemetriaData } from "../types/TelemetriaData";
 // The context must hold all displayed data
 interface TelemetryContextType {
     latestData: TelemetriaData | null;
+    viewMode: "time" | "dist"; // Controls the X-Axis globally
     history: {
+        timestamps: number[];
+        total_distance: number[]; // Needed for the X-Axis in Dist mode
+        lap_distance: number[];
+        
         speeds: number[];
         rpms: number[];
         temperatures_motor: number[];
@@ -26,11 +31,6 @@ interface TelemetryContextType {
         pitch: number[];
         latitude: number[];
         longitude: number[];
-        
-        total_distance: number[];
-        lap_distance: number[];
-
-        timestamps: number[];
         path: [number, number][];
     };
     connectedIp: string | null;
@@ -41,16 +41,17 @@ const TelemetryContext = createContext<TelemetryContextType | null>(null);
 
 export function useTelemetryData() {
     const context = useContext(TelemetryContext);
-        // This is a safe return in case of no provider (server)
+    // This is a safe return in case of no provider (server)
     if (!context) {
         return {
             latestData: null,
+            viewMode: "time" as "time" | "dist",
             history: { 
-                timestamps: [], speeds: [], rpms: [], 
-                temperatures_motor: [], temperatures_cvt: [], soc: [], volt: [], current: [],
-                acc_x: [], acc_y: [], acc_z: [], dps_x: [], dps_y: [], dps_z: [],
-                roll: [], pitch: [], latitude: [], longitude: [],
-                total_distance: [], lap_distance: [], path: []
+                timestamps: [], total_distance: [], lap_distance: [], 
+                speeds: [], rpms: [], temperatures_motor: [], temperatures_cvt: [], 
+                soc: [], volt: [], current: [], acc_x: [], acc_y: [], acc_z: [], 
+                dps_x: [], dps_y: [], dps_z: [], roll: [], pitch: [], 
+                latitude: [], longitude: [], path: []
             },
             connectedIp: null,
             startFinishLine: null

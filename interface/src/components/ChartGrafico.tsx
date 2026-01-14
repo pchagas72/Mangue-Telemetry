@@ -55,11 +55,15 @@ export function ChartGrafico({
               
               if (isScatter) return v.toFixed(2);
 
-              if (v > 100000000000) {
+              // Heuristic: If label says "TIME", treat as date. 
+              // Otherwise treat as Distance (or other unit).
+              if (xAxisLabel.includes("TIME")) {
                  const d = new Date(v);
                  return d.toLocaleTimeString('en-US', { hour12: false });
               }
-              return v.toFixed(2) + "s";
+              
+              // Distance formatting
+              return v.toFixed(0) + "m";
           },
         },
         ...series.map((s) => ({
@@ -81,14 +85,16 @@ export function ChartGrafico({
           values: (_u, vals) => vals.map(v => {
               if (isScatter) return v >= 1000 ? (v/1000).toFixed(1) + "k" : v.toFixed(0);
               
-              if (v > 100000000000) {
+              if (xAxisLabel.includes("TIME")) {
                   return new Date(v).toLocaleTimeString('en-US', { hour12: false, hour: "2-digit", minute:"2-digit", second:"2-digit" });
               }
-              return v.toFixed(1);
+              
+              // Distance formatting for Axis
+              return v.toFixed(0);
           }),
         },
         {
-          // Y-Axis Visuals
+          // Y-Axis
           label: titulo.toUpperCase(),
           labelSize: 20,
           labelFont: "12px 'Consolas', monospace",
@@ -109,7 +115,7 @@ export function ChartGrafico({
 
     const u = new uPlot(opts, data, chartRef.current);
     uplotRef.current = u;
-
+    
     const observer = new ResizeObserver((entries) => {
       for (const entry of entries) {
         if (uplotRef.current) {
@@ -126,7 +132,7 @@ export function ChartGrafico({
       uplotRef.current = null;
     };
     
-  }, [xAxisLabel, isScatter, titulo, series.length, series.map(s => s.label).join(',')]); 
+  }, [xAxisLabel, isScatter, titulo, series.length]); 
 
   useEffect(() => {
     if (uplotRef.current) {

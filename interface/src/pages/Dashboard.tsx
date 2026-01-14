@@ -210,8 +210,11 @@ const Dashboard = () => {
     const [api, setApi] = useState<DockviewApi>();
     const [serverIp, setServerIp] = useState<string>("");
     const [inputIp, setInputIp] = useState("localhost");
+    
+    // View States
     const [viewMode, setViewMode] = useState<"time" | "dist">("time");
-    const [distMode, setDistMode] = useState<"total" | "lap">("total"); // Added state for distance mode
+    const [distMode, setDistMode] = useState<"total" | "lap">("total");
+    
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Data received from the backend
@@ -220,6 +223,7 @@ const Dashboard = () => {
     // Data context
     const [contextState, setContextState] = useState({
         latestData: null as TelemetriaData | null,
+        viewMode: "time" as "time" | "dist",
         history: {
             timestamps: [] as number[],
             speeds: [] as number[],
@@ -245,6 +249,11 @@ const Dashboard = () => {
         },
         connectedIp: null as string | null,
     });
+
+    // Sync viewMode state with context
+    useEffect(() => {
+        setContextState(prev => ({ ...prev, viewMode }));
+    }, [viewMode]);
 
     // The server keeps track of the last 500 data points in case of a refresh
     // or new client connection
@@ -354,6 +363,7 @@ const Dashboard = () => {
 
                 return {
                     latestData: incomingData,
+                    viewMode: viewMode, // Ensure state persists
                     connectedIp: serverIp,
                     history: {
                         timestamps: updateArr(prev.history.timestamps, safeTimestamp),
@@ -381,7 +391,7 @@ const Dashboard = () => {
                 };
             });
         }
-    }, [incomingData, serverIp]);
+    }, [incomingData, serverIp, viewMode]);
 
     // Draws the main interface
     const onReady = (event: DockviewReadyEvent) => {
