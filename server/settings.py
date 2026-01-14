@@ -4,8 +4,8 @@ from typing import Literal
 class Settings(BaseSettings):
     # Server serttings
     # Choose the data source: 'serial', 'mqtt', or 'simulator' data_source: Literal["serial", "mqtt", "simulator"] = "serial"
-    data_source: Literal["serial", "mqtt", "simulator"] = "mqtt"
-    broadcast_delay_seconds: float = 0.5
+    data_source: Literal["serial", "mqtt", "simulator"] = "simulator"
+    broadcast_delay_seconds: float = 0.05
 
     # MQTT Broker Settings
     mqtt_hostname: str = "44dbd06832c54083bd5d0cacdb217aff.s1.eu.hivemq.cloud"

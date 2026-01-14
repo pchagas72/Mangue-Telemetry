@@ -5,11 +5,9 @@ mantendo a saída no formato de dicionário para compatibilidade com a API.
 """
 
 import asyncio
-from datetime import datetime
 import math
 import time
 from typing import Dict, Any
-import random
 
 class Simulador:
     """
@@ -73,48 +71,71 @@ class Simulador:
     def _gerar_pacote_de_dados(self) -> Dict[str, Any]:
         """
         Gera um único pacote de dados de telemetria usando a lógica do C++.
+        
+        A função gera valores flutuantes que correspondem aos valores decodificados
+        que o parser geraria a partir do pacote binário do C++.
 
         Returns:
             Um dicionário contendo os dados de telemetria simulados.
         """
-        c = self.counter  # Usando 'c' para ser mais parecido com o C++
+        c = self.counter 
 
-        # --- Lógica de geração de dados portada do `populate_packet` em C++ ---
-        # Os valores são arredondados para manter o formato do simulador original
+        # --- Lógica portada do C++ (populate_packet) ---
         
-        # O C++ armazena valores como inteiros escalados (ex: acc_x como int16_t).
-        # Aqui, vamos manter como floats, mas usando a mesma função base.
-        # Ex: int16_t(sin(c * 0.5) * 100) -> round(sin(c * 0.5), 2)
-        accx = round(math.sin(c * 0.5), 2)
-        accy = round(math.cos(c * 0.5), 2)
-        # 980 em C++ é 9.8 m/s^2. Dividimos por 100 para normalizar.
-        accz = round(9.8 + math.sin(c * 0.2) * 0.1, 2)
+        # Acelerômetro
+        # C++: int16 scaled (x100). Python: float real.
+        acc_x = round(math.sin(c * 0.5), 2)
+        acc_y = round(math.cos(c * 0.5), 2)
+        acc_z = round(9.8 + math.sin(c * 0.2) * 0.1, 2)
         
-        # DPS (Degrees Per Second)
-        dpsx = round(math.cos(c * 0.4) * 5, 2) # Reduzido para valores mais sutis
-        dpsy = round(math.sin(c * 0.4) * 5, 2)
-        dpsz = round(math.cos(c * 0.1), 2)
+        # Giroscópio / DPS
+        # C++: int16 scaled. Ex: 50, 50, 5. Assumindo escala x10 -> 5.0, 5.0, 0.5
+        dps_x = round(math.cos(c * 0.4) * 5, 2)
+        dps_y = round(math.sin(c * 0.4) * 5, 2)
+        dps_z = round(math.cos(c * 0.1) * 0.5, 2)
+
+        # Ângulos (Roll/Pitch)
+        # C++: 20, 10. Assumindo escala x10 -> 2.0, 1.0 graus
+        roll = round(math.sin(c * 0.1) * 2, 2)
+        pitch = round(math.cos(c * 0.1) * 1, 2)
+
+        # Dados do Veículo
+        speed = (c * 2) % 60
+        rpm = 3000 + int(math.sin(c * 0.8) * 500)
+        
+        volt = round(12.5 + math.sin(c * 0.1) * 0.5, 2)
+        soc = 98 - (c % 20)
+        temp_cvt = 80 + int(math.sin(c * 0.2) * 5)
+        current = round(15.3 + math.cos(c * 0.1) * 2.0, 2)
+        temperature = 75 + int(math.cos(c * 0.3) * 3)
+        
+        # GPS
+        latitude = -8.05428 + math.sin(c * 0.01) * 0.001
+        longitude = -34.8813 + math.cos(c * 0.01) * 0.001
+
+        # Timestamp em milissegundos (igual ao C++ system_clock)
+        timestamp = int(time.time() * 1000)
 
         dados = {
-            "accx": accx,
-            "accy": accy,
-            "accz": accz,
-            "dpsx": dpsx,
-            "dpsy": dpsy,
-            "dpsz": dpsz,
-            "roll": 0.31,
-            "pitch": 0.50,
-            "rpm": random.randint(1600,1800),
-            "speed": 0,
-            "temperature": 80,
-            "soc": 97,
-            "temp_cvt": 74,
-            "volt": 11.8,
-            "current": 120,
+            "acc_x": acc_x,
+            "acc_y": acc_y,
+            "acc_z": acc_z,
+            "dps_x": dps_x,
+            "dps_y": dps_y,
+            "dps_z": dps_z,
+            "roll": roll,
+            "pitch": pitch,
+            "rpm": rpm,
+            "speed": speed,
+            "temperature": temperature,
+            "soc": soc,
+            "temp_cvt": temp_cvt,
+            "volt": volt,
+            "current": current,
             "flags": c % 2,
-            "latitude": 0,
-            "longitude": 0,
-            "timestamp": datetime.now().isoformat(),
+            "latitude": latitude,
+            "longitude": longitude,
+            "timestamp": timestamp,
         }
 
         self.counter += 1
@@ -123,7 +144,7 @@ class Simulador:
     async def gerar_dados(self) -> Dict[str, Any]:
         """
         Gera e retorna um único pacote de dados.
-        Este é o método chamado pelo `main.py`. Ele precisa ser `async`.
+        Chamado pelo main.py quando settings.data_source == "simulator".
         """
         return self._gerar_pacote_de_dados()
 

@@ -211,6 +211,7 @@ const Dashboard = () => {
     const [serverIp, setServerIp] = useState<string>("");
     const [inputIp, setInputIp] = useState("localhost");
     const [viewMode, setViewMode] = useState<"time" | "dist">("time");
+    const [distMode, setDistMode] = useState<"total" | "lap">("total"); // Added state for distance mode
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     // Data received from the backend
@@ -238,6 +239,8 @@ const Dashboard = () => {
             pitch: [] as number[],
             latitude: [] as number[],
             longitude: [] as number[],
+            total_distance: [] as number[],
+            lap_distance: [] as number[],
             path: [] as [number, number][],
         },
         connectedIp: null as string | null,
@@ -291,6 +294,8 @@ const Dashboard = () => {
                                 pitch: merge(prev.history.pitch, 'pitch'),
                                 latitude: merge(prev.history.latitude, 'latitude'),
                                 longitude: merge(prev.history.longitude, 'longitude'),
+                                total_distance: merge(prev.history.total_distance, 'total_distance'),
+                                lap_distance: merge(prev.history.lap_distance, 'lap_distance'),
                                 path: newPath
                             },
                             // Use the last packet to set the "Current" numbers
@@ -369,6 +374,8 @@ const Dashboard = () => {
                         pitch: updateArr(prev.history.pitch, incomingData.pitch),
                         latitude: updateArr(prev.history.latitude, incomingData.latitude),
                         longitude: updateArr(prev.history.longitude, incomingData.longitude),
+                        total_distance: updateArr(prev.history.total_distance, incomingData.total_distance || 0),
+                        lap_distance: updateArr(prev.history.lap_distance, incomingData.lap_distance || 0),
                         path: updatePath(prev.history.path, incomingData.latitude, incomingData.longitude)
                     }
                 };
@@ -477,6 +484,24 @@ const Dashboard = () => {
                             {(incomingData?.lap_count || 0).toString().padStart(2, '0')}
                         </span>
                     </div>
+                    
+                    <div 
+                        className="info-block mobile-hide" 
+                        onClick={() => setDistMode(prev => prev === 'total' ? 'lap' : 'total')}
+                        style={{ cursor: 'pointer', userSelect: 'none', minWidth: '80px' }}
+                        title="Click to switch between Total and Lap distance"
+                    >
+                        <span className="info-label" style={{ color: distMode === 'lap' ? 'var(--accent-yellow)' : '#666' }}>
+                            {distMode === 'total' ? "TOTAL DIST" : "LAP DIST"}
+                        </span>
+                        <span className="info-value">
+                            {distMode === 'total' 
+                                ? (incomingData?.total_distance ? (incomingData.total_distance / 1000).toFixed(2) : "0.00")
+                                : (incomingData?.lap_distance ? (incomingData.lap_distance / 1000).toFixed(2) : "0.00")
+                            } <span style={{fontSize: '10px', color: '#666'}}>km</span>
+                        </span>
+                    </div>
+
                     <div className="info-block">
                         <span className="info-label">CURRENT</span>
                         <span className="info-value time">

@@ -30,4 +30,7 @@ export type TelemetriaData = {
     gap_to_best?: number;
     sf_lat?: number;
     sf_lon?: number;
+    
+    total_distance?: number;
+    lap_distance?: number;
 };

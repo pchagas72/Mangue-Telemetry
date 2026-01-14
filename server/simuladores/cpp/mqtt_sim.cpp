@@ -12,12 +12,13 @@ using namespace std::chrono;
 #define MQTT_PORT 8883
 #define MQTT_TOPIC "/logging"
 #define MQTT_CLIENT_ID "Mangu3Baja_Sim_CPP"
-#define MQTT_USERNAME "***REMOVED***"
-#define MQTT_PASSWORD "***REMOVED***"
+#define MQTT_USERNAME ""
+#define MQTT_PASSWORD ""
 
 // Path to system CA certificates (Standard on Ubuntu/Debian/Arch)
 // If this file does not exist, try "/etc/pki/tls/certs/ca-bundle.crt" (Fedora/RHEL)
 #define CA_CERT_PATH "/etc/ssl/certs/ca-certificates.crt"
+
 
 #pragma pack(push, 1)
 
@@ -104,18 +105,21 @@ public:
         while (true) {
             mqtt_packet_t pkt = gerar_pacote();
             
-            int rc = publish(nullptr, MQTT_TOPIC, sizeof(pkt), &pkt, 1, false);
-            
-            if(rc != MOSQ_ERR_SUCCESS){
-                cerr << "[ERROR] Publish failed: " << mosquitto_strerror(rc) << endl;
-                reconnect();
-                this_thread::sleep_for(chrono::seconds(1));
-            } else {
-                cout << "[MQTT] Sending Packet " << counter << " | Speed: " << pkt.speed << " km/h" << endl;
-            }
-            
-            counter++;
-            this_thread::sleep_for(chrono::milliseconds(500));
+            int counter = 0;
+                if (counter == 10){
+                    int rc = publish(nullptr, MQTT_TOPIC, sizeof(pkt), &pkt, 1, false);
+
+                    if(rc != MOSQ_ERR_SUCCESS){
+                        cerr << "[ERROR] Publish failed: " << mosquitto_strerror(rc) << endl;
+                        reconnect();
+                        this_thread::sleep_for(chrono::seconds(1));
+                    } else {
+                        cout << "[MQTT] Sending Packet " << counter << " | Speed: " << pkt.speed << " km/h" << endl;
+                    }
+
+                    counter++;
+                    this_thread::sleep_for(chrono::milliseconds(500));
+                }
         }
     }
 

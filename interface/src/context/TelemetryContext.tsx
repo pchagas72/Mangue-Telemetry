@@ -26,6 +26,9 @@ interface TelemetryContextType {
         pitch: number[];
         latitude: number[];
         longitude: number[];
+        
+        total_distance: number[];
+        lap_distance: number[];
 
         timestamps: number[];
         path: [number, number][];
@@ -42,7 +45,13 @@ export function useTelemetryData() {
     if (!context) {
         return {
             latestData: null,
-            history: { timestamps: [], speeds: [], rpms: [] },
+            history: { 
+                timestamps: [], speeds: [], rpms: [], 
+                temperatures_motor: [], temperatures_cvt: [], soc: [], volt: [], current: [],
+                acc_x: [], acc_y: [], acc_z: [], dps_x: [], dps_y: [], dps_z: [],
+                roll: [], pitch: [], latitude: [], longitude: [],
+                total_distance: [], lap_distance: [], path: []
+            },
             connectedIp: null,
             startFinishLine: null
         };

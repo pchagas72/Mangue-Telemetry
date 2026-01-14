@@ -13,6 +13,9 @@ class DataProcessing:
         self.current_lap_start = 0 # ms
         self.best_lap = 0  # ms
         self.lap_count = 0 # int
+        self.last_pos = None # (lat, lon) or None
+        self.total_distance = 0 # m
+        self.lap_distance = 0 # m
         
     def set_sf_line(self, lat, lon):
         self.sf_line = (lat, lon)
@@ -67,6 +70,18 @@ class DataProcessing:
         data['current_lap_time'] = current_time - self.current_lap_start
         data['best_lap_time'] = self.best_lap # Renamed to match frontend expectation
         data['last_lap_time'] = getattr(self, 'last_lap_time', 0)
+
+        # Distance Calculation
+        if self.last_pos != None:
+            dist_delta = self.haversine(data['latitude'], data['longitude'], *self.last_pos)
+            self.total_distance += dist_delta
+            self.lap_distance += dist_delta
+            
+        self.last_pos = (data['latitude'], data['longitude'])
+        
+        # Add to packet
+        data['total_distance'] = self.total_distance
+        data['lap_distance'] = self.lap_distance
         
         return data
 
@@ -74,6 +89,7 @@ class DataProcessing:
         lap_time = now - self.current_lap_start
         self.lap_count += 1
         self.last_lap_time = lap_time
+        self.lap_distance = 0
         
         # Check if it's a best lap (0 means unset)
         if self.best_lap == 0 or lap_time < self.best_lap:
