@@ -1,0 +1,8 @@
+<RCC>
+  <qresource prefix="/Mangue/Telemetry/">
+    <file alias="qml/main.qml">/home/pedro/git/telemetria/src/TelemetryPrototype/qml/main.qml</file>
+    <file alias="qml/MainMenu.qml">/home/pedro/git/telemetria/src/TelemetryPrototype/qml/MainMenu.qml</file>
+    <file alias="qml/TelemetryDash.qml">/home/pedro/git/telemetria/src/TelemetryPrototype/qml/TelemetryDash.qml</file>
+  </qresource>
+</RCC>
+

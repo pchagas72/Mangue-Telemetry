@@ -1,0 +1,14 @@
+-rootPath
+/home/pedro/git/telemetria/src/TelemetryPrototype
+-cmake-output
+-output-file
+/home/pedro/git/telemetria/src/TelemetryPrototype/build/.qt/qml_imports/appTelemetryPrototype_conf.cmake
+-importPath
+/home/pedro/git/telemetria/src/TelemetryPrototype/build
+-importPath
+/home/pedro/git/telemetria/src/TelemetryPrototype/build/Mangue/Telemetry
+-importPath
+/usr/lib/qt6/qml
+-qrcFiles
+/home/pedro/git/telemetria/src/TelemetryPrototype/build/.qt/rcc/qmake_Mangue_Telemetry.qrc
+/home/pedro/git/telemetria/src/TelemetryPrototype/build/.qt/rcc/appTelemetryPrototype_raw_qml_0.qrc

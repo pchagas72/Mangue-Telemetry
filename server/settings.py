@@ -1,3 +1,7 @@
+"""
+    Arquivo de configurações server-side do Mangue Telemetry
+"""
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Literal
 
@@ -10,7 +14,7 @@ class Settings(BaseSettings):
     # MQTT Broker Settings
     mqtt_hostname: str = "44dbd06832c54083bd5d0cacdb217aff.s1.eu.hivemq.cloud"
     mqtt_port: int = 8883
-    mqtt_username: str = ""
+    mqtt_username: str = "pedrochagas"
     mqtt_password: str = ""
 
     # LoRa Serial Receiver Settings

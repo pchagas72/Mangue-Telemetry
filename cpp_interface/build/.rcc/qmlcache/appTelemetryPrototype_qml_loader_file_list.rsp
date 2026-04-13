@@ -1,0 +1,7 @@
+--resource
+/home/pedro/git/telemetria/src/TelemetryPrototype/build/.qt/rcc/qmake_Mangue_Telemetry.qrc
+--resource
+/home/pedro/git/telemetria/src/TelemetryPrototype/build/.qt/rcc/appTelemetryPrototype_raw_qml_0.qrc
+/Mangue/Telemetry/qml/main.qml
+/Mangue/Telemetry/qml/MainMenu.qml
+/Mangue/Telemetry/qml/TelemetryDash.qml

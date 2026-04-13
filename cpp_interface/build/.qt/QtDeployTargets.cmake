@@ -1,0 +1,2 @@
+set(__QT_DEPLOY_TARGET_appTelemetryPrototype_FILE /home/pedro/git/telemetria/src/TelemetryPrototype/build/appTelemetryPrototype)
+set(__QT_DEPLOY_TARGET_appTelemetryPrototype_TYPE EXECUTABLE)
