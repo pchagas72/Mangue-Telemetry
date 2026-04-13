@@ -1,6 +1,0 @@
-<RCC>
-  <qresource prefix="/">
-    <file alias="/Mangue/Telemetry">/home/pedro/git/telemetria/src/TelemetryPrototype/build/Mangue/Telemetry</file>
-
-  </qresource>
-</RCC>

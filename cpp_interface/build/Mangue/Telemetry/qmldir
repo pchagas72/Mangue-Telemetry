@@ -1,7 +1,0 @@
-module Mangue.Telemetry
-typeinfo appTelemetryPrototype.qmltypes
-prefer :/Mangue/Telemetry/
-MainMenu 1.0 qml/MainMenu.qml
-TelemetryDash 1.0 qml/TelemetryDash.qml
-depends QtQuick
-
